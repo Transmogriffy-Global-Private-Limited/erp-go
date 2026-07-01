@@ -244,3 +244,38 @@ Current next step:
 
 - Add shared Go database configuration/connection package.
 - Add DB health endpoints.
+
+## 2026-07-01
+
+### Added runtime PostgreSQL connectivity and DB health endpoints
+
+Added:
+
+- internal/platform/db
+- scripts/run-control-plane-api.ps1
+- scripts/run-erp-api.ps1
+- migrations/000002_runtime_role_grants.up.sql
+- migrations/000002_runtime_role_grants.down.sql
+
+Updated:
+
+- cmd/control-plane-api/main.go
+- cmd/erp-api/main.go
+- scripts/db-check.ps1
+- .env.example
+- README.md
+- docs/NATIVE_LOCAL_DEV.md
+
+Reason:
+
+- Both Go APIs now need runtime PostgreSQL connectivity.
+- Health checks should include database health.
+- Runtime DB role grants must be managed explicitly.
+- Project docs must stay aligned with executable behavior.
+
+Current next step:
+
+- Apply 000002_runtime_role_grants.
+- Run database checks.
+- Start both APIs through scripts.
+- Verify /healthz/db on both services.

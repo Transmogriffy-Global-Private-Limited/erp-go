@@ -12,14 +12,28 @@ Never commit .env.
 
 ## Database URLs
 
-Two database URLs are used:
+Three database URLs are currently used:
 
 - MIGRATION_DATABASE_URL
+- CONTROL_PLANE_DATABASE_URL
 - ERP_DATABASE_URL
 
 MIGRATION_DATABASE_URL is used by local migration scripts.
 
-ERP_DATABASE_URL will be used by the application runtime later.
+CONTROL_PLANE_DATABASE_URL is used by control-plane-api.
+
+ERP_DATABASE_URL is used by erp-api.
+
+## Database roles
+
+Local development currently expects:
+
+- erp_owner
+- erp_app
+
+erp_owner owns the local database and applies migrations.
+
+erp_app is the application runtime role.
 
 ## Scripts
 
@@ -29,15 +43,23 @@ Check DB connectivity:
 
 Apply migration:
 
-.\scripts\apply-migration.ps1 -Direction up
+.\scripts\apply-migration.ps1 -Name 000002_runtime_role_grants -Direction up
 
 Rollback migration:
 
-.\scripts\apply-migration.ps1 -Direction down
+.\scripts\apply-migration.ps1 -Name 000002_runtime_role_grants -Direction down
 
 Mark an already-applied migration in the local migration ledger:
 
 .\scripts\mark-migration-applied.ps1 -Name 000001_platform_foundation
+
+Run control plane API:
+
+.\scripts\run-control-plane-api.ps1
+
+Run ERP API:
+
+.\scripts\run-erp-api.ps1
 
 ## Migration ledger
 

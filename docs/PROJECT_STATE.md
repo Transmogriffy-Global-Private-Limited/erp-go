@@ -351,3 +351,36 @@ Current next recommended step:
 - Add shared DB package.
 - Add /healthz/db endpoint for erp-api and control-plane-api.
 - Ensure runtime DB role is treated separately from migration owner role.
+
+## 2026-07-01 update
+
+Runtime PostgreSQL connectivity was added to both Go APIs.
+
+New runtime DB package:
+
+- internal/platform/db
+
+New service health endpoints:
+
+- GET /healthz/db on control-plane-api
+- GET /healthz/db on erp-api
+
+New scripts:
+
+- scripts/run-control-plane-api.ps1
+- scripts/run-erp-api.ps1
+
+New migration:
+
+- 000002_runtime_role_grants
+
+Updated docs:
+
+- README.md
+- docs/NATIVE_LOCAL_DEV.md
+
+Next recommended step:
+
+- Apply 000002_runtime_role_grants.
+- Run scripts/db-check.ps1.
+- Start both APIs and verify /healthz/db.

@@ -1,36 +1,60 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
+	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/db"
 	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/httpx"
 	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/tenancy"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+type app struct {
+	db *pgxpool.Pool
+}
+
 func main() {
-	port := env("PORT", "8080")
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	addr := env("ERP_HTTP_ADDR", ":8080")
+	databaseURL := env("ERP_DATABASE_URL", "")
+
+	pool, err := db.Open(ctx, databaseURL)
+	if err != nil {
+		log.Fatalf("connect database: %v", err)
+	}
+	defer pool.Close()
+
+	app := &app{
+		db: pool,
+	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/healthz", healthHandler)
-	mux.Handle("/api/v1/modules", tenantMiddleware(http.HandlerFunc(enabledModulesHandler)))
+	mux.HandleFunc("/healthz", app.healthHandler)
+	mux.HandleFunc("/healthz/db", app.dbHealthHandler)
+	mux.Handle("/api/v1/modules", tenantMiddleware(http.HandlerFunc(app.enabledModulesHandler)))
 
 	server := &http.Server{
-		Addr:              ":" + port,
+		Addr:              addr,
 		Handler:           logRequests(mux),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
-	log.Printf("erp-api listening on :%s", port)
+	log.Printf("erp-api listening on %s", addr)
 
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
 	}
 }
 
-func healthHandler(w http.ResponseWriter, r *http.Request) {
+func (a *app) healthHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		httpx.MethodNotAllowed(w, http.MethodGet)
 		return
@@ -42,7 +66,28 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func enabledModulesHandler(w http.ResponseWriter, r *http.Request) {
+func (a *app) dbHealthHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		httpx.MethodNotAllowed(w, http.MethodGet)
+		return
+	}
+
+	if err := db.Ping(r.Context(), a.db); err != nil {
+		httpx.JSON(w, http.StatusServiceUnavailable, map[string]any{
+			"service": "erp-api",
+			"status":  "db_unavailable",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	httpx.JSON(w, http.StatusOK, map[string]any{
+		"service": "erp-api",
+		"status":  "db_ok",
+	})
+}
+
+func (a *app) enabledModulesHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		httpx.MethodNotAllowed(w, http.MethodGet)
 		return

@@ -10,6 +10,8 @@ This repository currently contains the first bootable backend spine:
 - erp-api
 - shared HTTP response helpers
 - tenant context helper
+- shared PostgreSQL runtime connection helper
+- native PowerShell migration workflow
 
 ## Control Plane
 
@@ -37,20 +39,38 @@ The ERP plane manages tenant business runtime:
 - purchase
 - accounting
 
+## Local database
+
+This project uses native PostgreSQL for local development.
+
+It does not use Docker or containers.
+
+Use .env.example as the template and create a local .env.
+
+Check database connectivity:
+
+.\scripts\db-check.ps1
+
+Apply a migration:
+
+.\scripts\apply-migration.ps1 -Name 000002_runtime_role_grants -Direction up
+
 ## Run locally
 
 Control plane API:
 
-go run ./cmd/control-plane-api
+.\scripts\run-control-plane-api.ps1
 
 ERP API:
 
-go run ./cmd/erp-api
+.\scripts\run-erp-api.ps1
 
 Health checks:
 
 Invoke-RestMethod http://localhost:8081/healthz
+Invoke-RestMethod http://localhost:8081/healthz/db
 Invoke-RestMethod http://localhost:8080/healthz
+Invoke-RestMethod http://localhost:8080/healthz/db
 
 Tenant-scoped ERP endpoint:
 
