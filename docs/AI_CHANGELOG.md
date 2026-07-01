@@ -1086,3 +1086,34 @@ Current next step:
 - Run verify-platform-logout.ps1.
 - Run verify-all.ps1.
 - Commit after success.
+
+## 2026-07-01
+
+### Added platform login/logout audit logging
+
+Added:
+
+- scripts/verify-platform-auth-audit.ps1
+- docs/decisions/0022-platform-auth-login-logout-audit.md
+
+Updated:
+
+- internal/platform/auth/platform_store.go
+- scripts/verify-all.ps1
+
+Behavior:
+
+- Successful platform login writes control.platform_auth.login to control.platform_audit_log.
+- Successful platform logout writes control.platform_auth.logout to control.platform_audit_log.
+- verify-platform-auth-audit.ps1 proves both audit counts increase.
+
+Reason:
+
+- Platform auth lifecycle events are security-relevant control-plane events.
+
+Current next step:
+
+- Restart control-plane-api.
+- Run verify-platform-auth-audit.ps1.
+- Run verify-all.ps1.
+- Commit after success.

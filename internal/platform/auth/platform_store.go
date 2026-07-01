@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/audit"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -49,9 +50,18 @@ WHERE id = $1
 }
 
 func (s Store) LoginSuperadmin(ctx context.Context, email string, password string, ttl time.Duration) (PlatformSession, error) {
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return PlatformSession{}, fmt.Errorf("begin platform login transaction: %w", err)
+	}
+
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
+
 	var platformUserID string
 
-	err := s.db.QueryRow(ctx, `
+	err = tx.QueryRow(ctx, `
 SELECT id::text
 FROM control.platform_users
 WHERE email = $1
@@ -76,7 +86,9 @@ WHERE email = $1
 	tokenHash := hashToken(token)
 	expiresAt := time.Now().UTC().Add(ttl)
 
-	_, err = s.db.Exec(ctx, `
+	var sessionID string
+
+	err = tx.QueryRow(ctx, `
 INSERT INTO control.platform_sessions (
 platform_user_id,
 token_hash,
@@ -87,9 +99,27 @@ $1,
 $2,
 $3
 )
-`, platformUserID, tokenHash, expiresAt)
+RETURNING id::text
+`, platformUserID, tokenHash, expiresAt).Scan(&sessionID)
 	if err != nil {
 		return PlatformSession{}, fmt.Errorf("insert platform session: %w", err)
+	}
+
+	if err := audit.InsertPlatform(ctx, tx, audit.PlatformEntry{
+		PlatformActorID: platformUserID,
+		Action:          "control.platform_auth.login",
+		TargetType:      "control.platform_session",
+		TargetID:        sessionID,
+		Metadata: map[string]any{
+			"email":      email,
+			"expires_at": expiresAt,
+		},
+	}); err != nil {
+		return PlatformSession{}, err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return PlatformSession{}, fmt.Errorf("commit platform login transaction: %w", err)
 	}
 
 	return PlatformSession{
@@ -139,19 +169,52 @@ func (s Store) RevokeSession(ctx context.Context, token string) (bool, error) {
 
 	tokenHash := hashToken(token)
 
-	tag, err := s.db.Exec(ctx, `
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return false, fmt.Errorf("begin platform logout transaction: %w", err)
+	}
+
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
+
+	var sessionID string
+	var platformUserID string
+
+	err = tx.QueryRow(ctx, `
 UPDATE control.platform_sessions
 SET status = 'revoked',
     revoked_at = now()
 WHERE token_hash = $1
   AND status = 'active'
   AND revoked_at IS NULL
-`, tokenHash)
+RETURNING id::text, platform_user_id::text
+`, tokenHash).Scan(&sessionID, &platformUserID)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return false, nil
+		}
+
 		return false, fmt.Errorf("revoke platform session: %w", err)
 	}
 
-	return tag.RowsAffected() > 0, nil
+	if err := audit.InsertPlatform(ctx, tx, audit.PlatformEntry{
+		PlatformActorID: platformUserID,
+		Action:          "control.platform_auth.logout",
+		TargetType:      "control.platform_session",
+		TargetID:        sessionID,
+		Metadata: map[string]any{
+			"revoked": true,
+		},
+	}); err != nil {
+		return false, err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return false, fmt.Errorf("commit platform logout transaction: %w", err)
+	}
+
+	return true, nil
 }
 
 var ErrInvalidPlatformLogin = errors.New("invalid platform login")

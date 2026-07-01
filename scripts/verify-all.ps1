@@ -85,6 +85,12 @@ Invoke-Step -Name "Platform logout verification" -Action {
     -EnvFile $EnvFile
 }
 
+Invoke-Step -Name "Platform auth audit verification" -Action {
+  & (Join-Path $PSScriptRoot "verify-platform-auth-audit.ps1") `
+    -ControlPlaneUrl $ControlPlaneUrl `
+    -EnvFile $EnvFile
+}
+
 Invoke-Step -Name "Plans/subscriptions verification" -Action {
   & (Join-Path $PSScriptRoot "verify-plans-subscriptions.ps1") `
     -BaseUrl $BaseUrl `

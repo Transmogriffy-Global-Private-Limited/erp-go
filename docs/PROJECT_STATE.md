@@ -1009,3 +1009,20 @@ Updated behavior:
 Next recommended step:
 
 - Verify and commit.
+
+## 2026-07-01 update
+
+Platform login/logout audit logging was added.
+
+New audited actions:
+
+- control.platform_auth.login
+- control.platform_auth.logout
+
+New verification script:
+
+- scripts/verify-platform-auth-audit.ps1
+
+Next recommended step:
+
+- Verify and commit.
