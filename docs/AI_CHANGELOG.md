@@ -1378,3 +1378,26 @@ Behavior:
 Reason:
 
 - Keep cmd/erp-api/main.go closer to process boot only.
+
+## 2026-07-01
+
+### Extracted ERP app construction
+
+Added:
+
+- cmd/erp-api/app.go
+- docs/decisions/0033-erp-app-construction-extracted.md
+
+Updated:
+
+- cmd/erp-api/main.go
+
+Behavior:
+
+- No intended behavior change.
+- app struct and newApp constructor now live in app.go.
+- main.go is closer to process boot only.
+
+Reason:
+
+- Keep ERP API boot, wiring, and handlers separated.

@@ -2,28 +2,14 @@ package main
 
 import (
 	"context"
+	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/db"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
-
-	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/modules/inventory"
-	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/auth"
-	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/db"
-	platformmodules "github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/modules"
-	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/rbac"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
-
-type app struct {
-	db             *pgxpool.Pool
-	modules        platformmodules.Store
-	rbac           rbac.Store
-	inventory      inventory.Store
-	tenantSessions auth.TenantSessionStore
-}
 
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -38,13 +24,7 @@ func main() {
 	}
 	defer pool.Close()
 
-	app := &app{
-		db:             pool,
-		modules:        platformmodules.NewStore(pool),
-		rbac:           rbac.NewStore(pool),
-		inventory:      inventory.NewStore(pool),
-		tenantSessions: auth.NewTenantSessionStore(pool),
-	}
+	app := newApp(pool)
 
 	handler := app.routes()
 

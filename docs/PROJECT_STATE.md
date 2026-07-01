@@ -1198,3 +1198,17 @@ Moved functions:
 Next recommended step:
 
 - Run full verification and commit.
+
+## 2026-07-01 update
+
+ERP app construction was extracted.
+
+New file:
+
+- cmd/erp-api/app.go
+
+New constructor:
+
+- newApp(pool)
+
+cmd/erp-api/main.go is now mostly process boot.
