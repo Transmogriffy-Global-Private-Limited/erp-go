@@ -267,9 +267,15 @@ func tenantMiddleware(next http.Handler) http.Handler {
 
 func userMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		userID := r.Header.Get("X-User-ID")
+		userID, ok := auth.UserIDFromContext(r.Context())
+		userID = strings.TrimSpace(userID)
+
+		if !ok || userID == "" {
+			userID = strings.TrimSpace(r.Header.Get("X-User-ID"))
+		}
+
 		if userID == "" {
-			httpx.Error(w, http.StatusUnauthorized, "user_required", "X-User-ID header is required")
+			httpx.Error(w, http.StatusUnauthorized, "user_required", "user context or X-User-ID header is required")
 			return
 		}
 

@@ -39,12 +39,7 @@ func (a *app) inventoryItemsSessionHandler(w http.ResponseWriter, r *http.Reques
 
 	nextRequest := r.Clone(ctx)
 	nextRequest.Header = r.Header.Clone()
-
-	// Internal compatibility for the existing Inventory handler.
-	// External callers still must provide X-ERP-Session to reach this point.
 	nextRequest.Header.Set("X-Tenant-ID", user.TenantID)
-	nextRequest.Header.Set("X-User-ID", user.UserID)
 
-	// Preserve module entitlement enforcement.
 	a.requireModule("inventory", http.HandlerFunc(a.inventoryItemsHandler)).ServeHTTP(w, nextRequest)
 }
