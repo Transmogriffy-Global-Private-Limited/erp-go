@@ -786,3 +786,28 @@ Result:
 
 - Control-plane APIs are no longer open in local development.
 - Temporary superadmin guard is working.
+
+## 2026-07-01 update
+
+Control-plane plans/subscriptions foundation was added.
+
+New store:
+
+- internal/platform/licensing/store.go
+
+New endpoints:
+
+- GET /control/v1/plans
+- POST /control/v1/plans
+- GET /control/v1/plans/{plan_id}/modules
+- POST /control/v1/plans/{plan_id}/modules/{module_id}/enable
+- POST /control/v1/tenants/{tenant_id}/subscription
+
+New verification script:
+
+- scripts/verify-plans-subscriptions.ps1
+
+Next recommended step:
+
+- Verify plans/subscriptions.
+- Run full verification.

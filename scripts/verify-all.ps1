@@ -68,6 +68,13 @@ Invoke-Step -Name "Control-plane auth verification" -Action {
     -ControlPlaneUrl $ControlPlaneUrl
 }
 
+Invoke-Step -Name "Plans/subscriptions verification" -Action {
+  & (Join-Path $PSScriptRoot "verify-plans-subscriptions.ps1") `
+    -BaseUrl $BaseUrl `
+    -ControlPlaneUrl $ControlPlaneUrl `
+    -EnvFile $EnvFile
+}
+
 Invoke-Step -Name "RBAC verification" -Action {
   & (Join-Path $PSScriptRoot "verify-rbac.ps1") `
     -BaseUrl $BaseUrl `

@@ -762,3 +762,37 @@ Verified:
 Result:
 
 - Temporary control-plane auth guard is working.
+
+## 2026-07-01
+
+### Added control-plane plans and tenant subscriptions
+
+Added:
+
+- internal/platform/licensing/store.go
+- scripts/verify-plans-subscriptions.ps1
+- docs/decisions/0013-control-plane-plans-subscriptions.md
+
+Updated:
+
+- cmd/control-plane-api/main.go
+- scripts/verify-all.ps1
+
+Behavior:
+
+- GET /control/v1/plans lists plans.
+- POST /control/v1/plans creates plans.
+- GET /control/v1/plans/{plan_id}/modules lists plan modules.
+- POST /control/v1/plans/{plan_id}/modules/{module_id}/enable adds a module to a plan.
+- POST /control/v1/tenants/{tenant_id}/subscription assigns a plan subscription to a tenant and enables plan modules for that tenant.
+
+Reason:
+
+- SaaS licensing needs plans/subscriptions, not only manual module toggles.
+
+Current next step:
+
+- Restart control-plane-api.
+- Run verify-plans-subscriptions.ps1.
+- Run verify-all.ps1.
+- Commit after success.
