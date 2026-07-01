@@ -39,6 +39,10 @@ Invoke-Step -Name "Database connectivity" -Action {
   & (Join-Path $PSScriptRoot "db-check.ps1") -EnvFile $EnvFile
 }
 
+Invoke-Step -Name "Platform superadmin seed" -Action {
+  & (Join-Path $PSScriptRoot "seed-platform-superadmin.ps1") -EnvFile $EnvFile
+}
+
 Invoke-Step -Name "Control plane health" -Action {
   $health = Invoke-RestMethod "$ControlPlaneUrl/healthz"
   if ($health.status -ne "ok") {
@@ -65,7 +69,8 @@ Invoke-Step -Name "ERP API health" -Action {
 
 Invoke-Step -Name "Control-plane auth verification" -Action {
   & (Join-Path $PSScriptRoot "verify-control-plane-auth.ps1") `
-    -ControlPlaneUrl $ControlPlaneUrl
+    -ControlPlaneUrl $ControlPlaneUrl `
+    -EnvFile $EnvFile
 }
 
 Invoke-Step -Name "Plans/subscriptions verification" -Action {
@@ -118,4 +123,3 @@ Invoke-Step -Name "Outbox worker verification" -Action {
 
 Write-Host ""
 Write-Host "All verification checks passed."
-

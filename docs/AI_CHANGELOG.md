@@ -908,3 +908,42 @@ Current next step:
 - Restart control-plane-api.
 - Run verify-all.ps1.
 - Commit after success.
+
+## 2026-07-01
+
+### Added DB-backed platform superadmin check
+
+Added:
+
+- migrations/000004_platform_users.up.sql
+- migrations/000004_platform_users.down.sql
+- internal/platform/auth/platform_store.go
+- scripts/seed-platform-superadmin.ps1
+- docs/decisions/0017-db-backed-platform-superadmin-check.md
+
+Updated:
+
+- internal/platform/controlapi/server.go
+- internal/platform/controlapi/auth.go
+- scripts/verify-control-plane-auth.ps1
+- scripts/verify-all.ps1
+
+Behavior:
+
+- X-Platform-User-ID remains the temporary platform identity carrier.
+- X-Platform-Role is no longer trusted for authorization.
+- Control-plane authorization checks control.platform_users for active superadmin.
+- verify-control-plane-auth.ps1 deliberately sends X-Platform-Role = viewer for the DB-backed superadmin request to prove the role header is ignored.
+
+Reason:
+
+- Control-plane APIs should not trust caller-supplied role headers.
+
+Current next step:
+
+- Apply migration 000004_platform_users.
+- Seed platform superadmin.
+- Restart control-plane-api.
+- Run verify-control-plane-auth.ps1.
+- Run verify-all.ps1.
+- Commit after success.

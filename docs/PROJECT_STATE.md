@@ -886,3 +886,33 @@ No behavior change intended.
 Next recommended step:
 
 - Run full verification and commit.
+
+## 2026-07-01 update
+
+DB-backed platform superadmin authorization was added.
+
+New table:
+
+- control.platform_users
+
+New migration:
+
+- 000004_platform_users
+
+New store:
+
+- internal/platform/auth/platform_store.go
+
+New seed script:
+
+- scripts/seed-platform-superadmin.ps1
+
+Updated behavior:
+
+- control-plane auth checks DB role/status.
+- X-Platform-Role is ignored for authorization.
+
+Next recommended step:
+
+- Apply migration 000004.
+- Verify full project.

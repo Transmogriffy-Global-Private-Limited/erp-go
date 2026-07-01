@@ -3,6 +3,7 @@ package controlapi
 import (
 	"net/http"
 
+	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/auth"
 	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/db"
 	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/httpx"
 	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/licensing"
@@ -12,18 +13,20 @@ import (
 )
 
 type App struct {
-	db        *pgxpool.Pool
-	modules   platformmodules.Store
-	tenants   tenancy.Store
-	licensing licensing.Store
+	db           *pgxpool.Pool
+	platformAuth auth.Store
+	modules      platformmodules.Store
+	tenants      tenancy.Store
+	licensing    licensing.Store
 }
 
 func NewHandler(pool *pgxpool.Pool) http.Handler {
 	app := &App{
-		db:        pool,
-		modules:   platformmodules.NewStore(pool),
-		tenants:   tenancy.NewStore(pool),
-		licensing: licensing.NewStore(pool),
+		db:           pool,
+		platformAuth: auth.NewStore(pool),
+		modules:      platformmodules.NewStore(pool),
+		tenants:      tenancy.NewStore(pool),
+		licensing:    licensing.NewStore(pool),
 	}
 
 	mux := http.NewServeMux()
@@ -31,11 +34,11 @@ func NewHandler(pool *pgxpool.Pool) http.Handler {
 	mux.HandleFunc("/healthz", app.healthHandler)
 	mux.HandleFunc("/healthz/db", app.dbHealthHandler)
 
-	mux.Handle("/control/v1/tenants", platformAuthMiddleware(http.HandlerFunc(app.tenantsHandler)))
-	mux.Handle("/control/v1/tenants/", platformAuthMiddleware(http.HandlerFunc(app.tenantSubresourceHandler)))
-	mux.Handle("/control/v1/modules", platformAuthMiddleware(http.HandlerFunc(app.modulesHandler)))
-	mux.Handle("/control/v1/plans", platformAuthMiddleware(http.HandlerFunc(app.plansHandler)))
-	mux.Handle("/control/v1/plans/", platformAuthMiddleware(http.HandlerFunc(app.planSubresourceHandler)))
+	mux.Handle("/control/v1/tenants", app.platformAuthMiddleware(http.HandlerFunc(app.tenantsHandler)))
+	mux.Handle("/control/v1/tenants/", app.platformAuthMiddleware(http.HandlerFunc(app.tenantSubresourceHandler)))
+	mux.Handle("/control/v1/modules", app.platformAuthMiddleware(http.HandlerFunc(app.modulesHandler)))
+	mux.Handle("/control/v1/plans", app.platformAuthMiddleware(http.HandlerFunc(app.plansHandler)))
+	mux.Handle("/control/v1/plans/", app.platformAuthMiddleware(http.HandlerFunc(app.planSubresourceHandler)))
 
 	return mux
 }

@@ -1,8 +1,15 @@
 param(
-  [string] $ControlPlaneUrl = "http://localhost:8081"
+  [string] $ControlPlaneUrl = "http://localhost:8081",
+  [string] $EnvFile = ".env"
 )
 
 $ErrorActionPreference = "Stop"
+
+$RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
+Set-Location $RepoRoot
+
+Write-Host "Seeding platform superadmin..."
+& (Join-Path $PSScriptRoot "seed-platform-superadmin.ps1") -EnvFile $EnvFile
 
 function Assert-Status {
   param(
@@ -22,14 +29,15 @@ function Assert-Status {
 
 $SuperadminHeaders = @{
   "X-Platform-User-ID" = "00000000-0000-0000-0000-00000000aaaa"
-  "X-Platform-Role" = "superadmin"
-}
-
-$WrongRoleHeaders = @{
-  "X-Platform-User-ID" = "00000000-0000-0000-0000-00000000bbbb"
   "X-Platform-Role" = "viewer"
 }
 
+$UnknownUserHeaders = @{
+  "X-Platform-User-ID" = "00000000-0000-0000-0000-00000000bbbb"
+  "X-Platform-Role" = "superadmin"
+}
+
+Write-Host ""
 Write-Host "Checking health remains public..."
 $Health = Invoke-RestMethod "$ControlPlaneUrl/healthz"
 if ($Health.status -ne "ok") {
@@ -45,14 +53,14 @@ Assert-Status -ExpectedStatus 401 -Label "No platform user" -Action {
 }
 
 Write-Host ""
-Write-Host "Checking control endpoint with wrong role..."
-Assert-Status -ExpectedStatus 403 -Label "Wrong platform role" -Action {
-  Invoke-WebRequest "$ControlPlaneUrl/control/v1/modules" -Headers $WrongRoleHeaders -SkipHttpErrorCheck
+Write-Host "Checking control endpoint with unknown platform user..."
+Assert-Status -ExpectedStatus 403 -Label "Unknown platform user" -Action {
+  Invoke-WebRequest "$ControlPlaneUrl/control/v1/modules" -Headers $UnknownUserHeaders -SkipHttpErrorCheck
 }
 
 Write-Host ""
-Write-Host "Checking control endpoint with superadmin..."
-Assert-Status -ExpectedStatus 200 -Label "Superadmin" -Action {
+Write-Host "Checking control endpoint with DB-backed superadmin..."
+Assert-Status -ExpectedStatus 200 -Label "DB-backed superadmin" -Action {
   Invoke-WebRequest "$ControlPlaneUrl/control/v1/modules" -Headers $SuperadminHeaders -SkipHttpErrorCheck
 }
 

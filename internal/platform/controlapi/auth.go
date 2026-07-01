@@ -8,18 +8,23 @@ import (
 	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/httpx"
 )
 
-func platformAuthMiddleware(next http.Handler) http.Handler {
+func (a *App) platformAuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		platformUserID := strings.TrimSpace(r.Header.Get("X-Platform-User-ID"))
-		platformRole := strings.TrimSpace(r.Header.Get("X-Platform-Role"))
 
 		if platformUserID == "" {
 			httpx.Error(w, http.StatusUnauthorized, "platform_user_required", "X-Platform-User-ID header is required")
 			return
 		}
 
-		if platformRole != "superadmin" {
-			httpx.Error(w, http.StatusForbidden, "platform_superadmin_required", "X-Platform-Role must be superadmin")
+		allowed, err := a.platformAuth.IsActiveSuperadmin(r.Context(), platformUserID)
+		if err != nil {
+			httpx.Error(w, http.StatusInternalServerError, "platform_auth_check_failed", "failed to check platform authorization")
+			return
+		}
+
+		if !allowed {
+			httpx.Error(w, http.StatusForbidden, "platform_superadmin_required", "platform user must be active superadmin")
 			return
 		}
 
