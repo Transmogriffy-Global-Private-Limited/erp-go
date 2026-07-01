@@ -2,22 +2,26 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/db"
 	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/httpx"
 	platformmodules "github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/modules"
+	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/tenancy"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type app struct {
 	db      *pgxpool.Pool
 	modules platformmodules.Store
+	tenants tenancy.Store
 }
 
 func main() {
@@ -36,6 +40,7 @@ func main() {
 	app := &app{
 		db:      pool,
 		modules: platformmodules.NewStore(pool),
+		tenants: tenancy.NewStore(pool),
 	}
 
 	mux := http.NewServeMux()
@@ -93,16 +98,69 @@ func (a *app) dbHealthHandler(w http.ResponseWriter, r *http.Request) {
 func (a *app) tenantsHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		httpx.JSON(w, http.StatusOK, map[string]any{
-			"tenants": []any{},
-		})
+		a.listTenants(w, r)
+
 	case http.MethodPost:
-		httpx.JSON(w, http.StatusCreated, map[string]any{
-			"message": "tenant creation endpoint reserved",
-		})
+		a.createTenant(w, r)
+
 	default:
 		httpx.MethodNotAllowed(w, http.MethodGet, http.MethodPost)
 	}
+}
+
+func (a *app) listTenants(w http.ResponseWriter, r *http.Request) {
+	tenants, err := a.tenants.ListTenants(r.Context())
+	if err != nil {
+		httpx.Error(w, http.StatusInternalServerError, "tenants_query_failed", "failed to load tenants")
+		return
+	}
+
+	httpx.JSON(w, http.StatusOK, map[string]any{
+		"tenants": tenants,
+	})
+}
+
+func (a *app) createTenant(w http.ResponseWriter, r *http.Request) {
+	var input tenancy.CreateTenantInput
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		httpx.Error(w, http.StatusBadRequest, "invalid_json", "request body must be valid JSON")
+		return
+	}
+
+	input.Slug = strings.TrimSpace(input.Slug)
+	input.LegalName = strings.TrimSpace(input.LegalName)
+	input.DisplayName = strings.TrimSpace(input.DisplayName)
+	input.Status = strings.TrimSpace(input.Status)
+
+	if input.Slug == "" {
+		httpx.Error(w, http.StatusBadRequest, "slug_required", "slug is required")
+		return
+	}
+
+	if input.LegalName == "" {
+		httpx.Error(w, http.StatusBadRequest, "legal_name_required", "legal_name is required")
+		return
+	}
+
+	if input.DisplayName == "" {
+		httpx.Error(w, http.StatusBadRequest, "display_name_required", "display_name is required")
+		return
+	}
+
+	if input.Status != "" && input.Status != "trial" && input.Status != "active" && input.Status != "suspended" && input.Status != "closed" {
+		httpx.Error(w, http.StatusBadRequest, "invalid_status", "status must be trial, active, suspended, or closed")
+		return
+	}
+
+	tenant, err := a.tenants.CreateTenant(r.Context(), input)
+	if err != nil {
+		httpx.Error(w, http.StatusInternalServerError, "tenant_create_failed", "failed to create tenant")
+		return
+	}
+
+	httpx.JSON(w, http.StatusCreated, map[string]any{
+		"tenant": tenant,
+	})
 }
 
 func (a *app) modulesHandler(w http.ResponseWriter, r *http.Request) {

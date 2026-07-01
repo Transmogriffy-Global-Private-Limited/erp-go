@@ -507,3 +507,21 @@ inventory.items
 Current next recommended step:
 
 - Make control-plane tenant APIs database-backed.
+
+## 2026-07-01 update
+
+Control-plane tenant APIs are now database-backed.
+
+New store:
+
+- internal/platform/tenancy/store.go
+
+Updated endpoint behavior:
+
+- GET /control/v1/tenants lists tenants from control.tenants.
+- POST /control/v1/tenants creates tenants in control.tenants.
+
+Next recommended step:
+
+- Verify tenant list/create endpoints.
+- Then add tenant module enable/disable endpoints.

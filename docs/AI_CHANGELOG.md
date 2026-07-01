@@ -423,3 +423,32 @@ This validates:
 Current next step:
 
 - Make control-plane tenant APIs database-backed.
+
+## 2026-07-01
+
+### Made control-plane tenant APIs database-backed
+
+Added:
+
+- internal/platform/tenancy/store.go
+
+Updated:
+
+- cmd/control-plane-api/main.go
+- README.md
+
+Behavior:
+
+- GET /control/v1/tenants reads from control.tenants.
+- POST /control/v1/tenants creates a tenant in control.tenants.
+- Tenant creation validates slug, legal_name, display_name, and status.
+
+Reason:
+
+- The control-plane tenant endpoint was still a placeholder.
+- Tenant lifecycle must become database-backed before licensing/module enablement APIs.
+
+Current next step:
+
+- Verify GET and POST /control/v1/tenants through control-plane-api.
+- Then add control-plane module enable/disable endpoint for tenants.
