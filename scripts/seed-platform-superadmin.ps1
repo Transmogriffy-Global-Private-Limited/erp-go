@@ -2,6 +2,7 @@ param(
   [string] $PlatformUserID = "00000000-0000-0000-0000-00000000aaaa",
   [string] $Email = "dev.superadmin@example.test",
   [string] $DisplayName = "Dev Superadmin",
+  [string] $Password = "dev-superadmin-password",
   [string] $EnvFile = ".env"
 )
 
@@ -22,23 +23,26 @@ INSERT INTO control.platform_users (
     email,
     display_name,
     status,
-    role
+    role,
+    password_hash
 )
 VALUES (
     '$PlatformUserID',
     '$Email',
     '$DisplayName',
     'active',
-    'superadmin'
+    'superadmin',
+    crypt('$Password', gen_salt('bf'))
 )
 ON CONFLICT (id) DO UPDATE
 SET email = EXCLUDED.email,
     display_name = EXCLUDED.display_name,
     status = EXCLUDED.status,
     role = EXCLUDED.role,
+    password_hash = EXCLUDED.password_hash,
     updated_at = now();
 
-SELECT id, email, display_name, status, role
+SELECT id, email, display_name, status, role, password_hash IS NOT NULL AS has_password
 FROM control.platform_users
 WHERE id = '$PlatformUserID';
 "@
@@ -50,3 +54,4 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host ""
 Write-Host "Platform superadmin seeded: $PlatformUserID"
+Write-Host "Platform superadmin email: $Email"

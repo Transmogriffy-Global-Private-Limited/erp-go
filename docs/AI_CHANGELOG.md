@@ -947,3 +947,44 @@ Current next step:
 - Run verify-control-plane-auth.ps1.
 - Run verify-all.ps1.
 - Commit after success.
+
+## 2026-07-01
+
+### Added platform login and session groundwork
+
+Added:
+
+- migrations/000005_platform_sessions.up.sql
+- migrations/000005_platform_sessions.down.sql
+- internal/platform/controlapi/login.go
+- scripts/verify-platform-session.ps1
+- docs/decisions/0018-platform-login-sessions.md
+
+Updated:
+
+- internal/platform/auth/platform_store.go
+- internal/platform/controlapi/server.go
+- internal/platform/controlapi/auth.go
+- scripts/seed-platform-superadmin.ps1
+- scripts/verify-all.ps1
+
+Behavior:
+
+- POST /control/v1/auth/login returns a platform session token for an active superadmin.
+- Protected control-plane routes accept X-Platform-Session.
+- X-Platform-User-ID remains as a temporary fallback.
+- X-Platform-Role continues to be ignored for authorization.
+
+Reason:
+
+- Platform auth needs real login/session groundwork.
+- Direct X-Platform-User-ID should eventually be removed.
+
+Current next step:
+
+- Apply migration 000005_platform_sessions.
+- Seed platform superadmin with password.
+- Restart control-plane-api.
+- Run verify-platform-session.ps1.
+- Run verify-all.ps1.
+- Commit after success.

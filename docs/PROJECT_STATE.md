@@ -916,3 +916,34 @@ Next recommended step:
 
 - Apply migration 000004.
 - Verify full project.
+
+## 2026-07-01 update
+
+Platform login/session groundwork was added.
+
+New endpoint:
+
+- POST /control/v1/auth/login
+
+New table:
+
+- control.platform_sessions
+
+New script:
+
+- scripts/verify-platform-session.ps1
+
+New ADR:
+
+- docs/decisions/0018-platform-login-sessions.md
+
+Temporary state:
+
+- X-Platform-Session is supported.
+- X-Platform-User-ID fallback is still supported.
+- X-Platform-Role remains ignored.
+
+Next recommended step:
+
+- Apply migration 000005.
+- Verify sessions and full project.
