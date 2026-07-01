@@ -478,3 +478,32 @@ Next recommended step:
 
 - Run scripts/verify-tenant-isolation.ps1.
 - Commit the verification tooling after success.
+
+## 2026-07-01 update
+
+Tenant isolation verification was successfully run through the ERP API.
+
+Verified flow:
+
+- Seeded tenant A: 00000000-0000-0000-0000-000000000001
+- Seeded tenant B: 00000000-0000-0000-0000-000000000002
+- Created an inventory item under tenant A
+- Confirmed tenant A can see its own item
+- Confirmed tenant B cannot see tenant A item
+
+Result:
+
+- Tenant isolation verification passed.
+
+This proves the current runtime path:
+
+X-Tenant-ID
+Go tenant context
+WithTenantTx
+PostgreSQL app.tenant_id
+RLS policy
+inventory.items
+
+Current next recommended step:
+
+- Make control-plane tenant APIs database-backed.

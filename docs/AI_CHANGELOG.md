@@ -397,3 +397,29 @@ Current next step:
 
 - Run verify-tenant-isolation.ps1 while erp-api is running.
 - Commit verification tooling if successful.
+
+## 2026-07-01
+
+### Verified tenant isolation through ERP API
+
+Verified:
+
+- scripts/verify-tenant-isolation.ps1 passed
+- tenant A can see its own inventory item
+- tenant B cannot see tenant A inventory item
+
+Result:
+
+- Runtime tenant isolation path is working through the actual ERP API.
+
+This validates:
+
+- tenant middleware
+- Go tenant context
+- internal/platform/db.WithTenantTx
+- PostgreSQL app.tenant_id
+- Row Level Security on inventory.items
+
+Current next step:
+
+- Make control-plane tenant APIs database-backed.
