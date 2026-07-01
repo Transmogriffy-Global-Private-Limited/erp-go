@@ -288,3 +288,27 @@ Future setup should use native Go tooling, PowerShell, native PostgreSQL or exte
 Next recommended step:
 
 - Add native database configuration and a PowerShell migration apply script using psql.
+
+## 2026-07-01 update
+
+Native local development workflow was added.
+
+New files:
+
+- .env.example
+- scripts/Import-DotEnv.ps1
+- scripts/db-check.ps1
+- scripts/apply-migration.ps1
+- docs/NATIVE_LOCAL_DEV.md
+
+Updated:
+
+- .gitignore
+
+The workflow uses PowerShell and psql. No Docker or containers.
+
+Next recommended step:
+
+- Create local PostgreSQL roles/database.
+- Copy .env.example to .env.
+- Run database check and first migration.

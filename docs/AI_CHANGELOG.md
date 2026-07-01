@@ -167,3 +167,32 @@ Reason:
 Current next step:
 
 - Add native database configuration and a PowerShell migration apply script using psql.
+
+## 2026-07-01
+
+### Added native environment and migration scripts
+
+Added:
+
+- .env.example
+- scripts/Import-DotEnv.ps1
+- scripts/db-check.ps1
+- scripts/apply-migration.ps1
+- docs/NATIVE_LOCAL_DEV.md
+
+Updated:
+
+- .gitignore
+
+Reason:
+
+- Local development must not use Docker or containers.
+- The project needs a native PowerShell and psql workflow for database checks and migrations.
+- .env.example is committed, while .env remains local-only.
+
+Current next step:
+
+- Create local PostgreSQL roles/database.
+- Copy .env.example to .env.
+- Run scripts/db-check.ps1.
+- Apply the first migration.
