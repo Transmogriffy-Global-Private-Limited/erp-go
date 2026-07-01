@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -12,6 +13,12 @@ import (
 	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/audit"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+)
+
+const (
+	platformLoginLockThreshold = 5
+	platformLoginLockDuration  = 15 * time.Minute
+	unknownPlatformActorID     = "unknown"
 )
 
 type Store struct {
@@ -60,22 +67,128 @@ func (s Store) LoginSuperadmin(ctx context.Context, email string, password strin
 	}()
 
 	var platformUserID string
+	var status string
+	var role string
+	var passwordOK bool
+	var lockedUntil sql.NullTime
 
 	err = tx.QueryRow(ctx, `
-SELECT id::text
+SELECT
+id::text,
+status,
+role,
+(password_hash IS NOT NULL AND password_hash = crypt($2, password_hash)) AS password_ok,
+locked_until
 FROM control.platform_users
 WHERE email = $1
-  AND password_hash IS NOT NULL
-  AND password_hash = crypt($2, password_hash)
-  AND status = 'active'
-  AND role = 'superadmin'
-`, email, password).Scan(&platformUserID)
+`, email, password).Scan(
+		&platformUserID,
+		&status,
+		&role,
+		&passwordOK,
+		&lockedUntil,
+	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
+			if auditErr := audit.InsertPlatform(ctx, tx, audit.PlatformEntry{
+				PlatformActorID: unknownPlatformActorID,
+				Action:          "control.platform_auth.login_failed",
+				TargetType:      "control.platform_user",
+				TargetID:        email,
+				Reason:          "unknown_email",
+				Metadata: map[string]any{
+					"email": email,
+				},
+			}); auditErr != nil {
+				return PlatformSession{}, auditErr
+			}
+
+			if commitErr := tx.Commit(ctx); commitErr != nil {
+				return PlatformSession{}, fmt.Errorf("commit unknown platform login failure audit: %w", commitErr)
+			}
+
 			return PlatformSession{}, ErrInvalidPlatformLogin
 		}
 
 		return PlatformSession{}, fmt.Errorf("query platform login: %w", err)
+	}
+
+	if lockedUntil.Valid && time.Now().UTC().Before(lockedUntil.Time.UTC()) {
+		if auditErr := audit.InsertPlatform(ctx, tx, audit.PlatformEntry{
+			PlatformActorID: platformUserID,
+			Action:          "control.platform_auth.login_failed",
+			TargetType:      "control.platform_user",
+			TargetID:        platformUserID,
+			Reason:          "locked",
+			Metadata: map[string]any{
+				"email":        email,
+				"locked_until": lockedUntil.Time.UTC(),
+			},
+		}); auditErr != nil {
+			return PlatformSession{}, auditErr
+		}
+
+		if commitErr := tx.Commit(ctx); commitErr != nil {
+			return PlatformSession{}, fmt.Errorf("commit locked platform login audit: %w", commitErr)
+		}
+
+		return PlatformSession{}, ErrPlatformLoginLocked
+	}
+
+	if status != "active" || role != "superadmin" || !passwordOK {
+		var failedLoginCount int
+		var newLockedUntil sql.NullTime
+
+		err = tx.QueryRow(ctx, `
+UPDATE control.platform_users
+SET failed_login_count = failed_login_count + 1,
+    last_failed_login_at = now(),
+    locked_until = CASE
+        WHEN failed_login_count + 1 >= $2 THEN now() + ($3::text)::interval
+        ELSE locked_until
+    END,
+    updated_at = now()
+WHERE id = $1
+RETURNING failed_login_count, locked_until
+`, platformUserID, platformLoginLockThreshold, platformLoginLockDuration.String()).Scan(
+			&failedLoginCount,
+			&newLockedUntil,
+		)
+		if err != nil {
+			return PlatformSession{}, fmt.Errorf("record failed platform login: %w", err)
+		}
+
+		reason := "invalid_credentials"
+		if status != "active" {
+			reason = "inactive_user"
+		} else if role != "superadmin" {
+			reason = "not_superadmin"
+		}
+
+		if auditErr := audit.InsertPlatform(ctx, tx, audit.PlatformEntry{
+			PlatformActorID: platformUserID,
+			Action:          "control.platform_auth.login_failed",
+			TargetType:      "control.platform_user",
+			TargetID:        platformUserID,
+			Reason:          reason,
+			Metadata: map[string]any{
+				"email":              email,
+				"failed_login_count": failedLoginCount,
+				"locked":             newLockedUntil.Valid,
+			},
+		}); auditErr != nil {
+			return PlatformSession{}, auditErr
+		}
+
+		if commitErr := tx.Commit(ctx); commitErr != nil {
+			return PlatformSession{}, fmt.Errorf("commit platform login failure transaction: %w", commitErr)
+		}
+
+		if newLockedUntil.Valid && failedLoginCount >= platformLoginLockThreshold {
+			return PlatformSession{}, ErrPlatformLoginLocked
+		}
+
+		return PlatformSession{}, ErrInvalidPlatformLogin
 	}
 
 	token, err := randomToken()
@@ -85,6 +198,18 @@ WHERE email = $1
 
 	tokenHash := hashToken(token)
 	expiresAt := time.Now().UTC().Add(ttl)
+
+	_, err = tx.Exec(ctx, `
+UPDATE control.platform_users
+SET failed_login_count = 0,
+    last_failed_login_at = NULL,
+    locked_until = NULL,
+    updated_at = now()
+WHERE id = $1
+`, platformUserID)
+	if err != nil {
+		return PlatformSession{}, fmt.Errorf("reset platform login failure state: %w", err)
+	}
 
 	var sessionID string
 
@@ -218,6 +343,7 @@ RETURNING id::text, platform_user_id::text
 }
 
 var ErrInvalidPlatformLogin = errors.New("invalid platform login")
+var ErrPlatformLoginLocked = errors.New("platform login locked")
 
 func randomToken() (string, error) {
 	bytes := make([]byte, 32)

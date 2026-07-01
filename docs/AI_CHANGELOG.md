@@ -1117,3 +1117,41 @@ Current next step:
 - Run verify-platform-auth-audit.ps1.
 - Run verify-all.ps1.
 - Commit after success.
+
+## 2026-07-01
+
+### Added failed platform login audit and lockout groundwork
+
+Added:
+
+- migrations/000006_platform_login_security.up.sql
+- migrations/000006_platform_login_security.down.sql
+- scripts/verify-platform-login-security.ps1
+- docs/decisions/0023-failed-platform-login-audit-lockout.md
+
+Updated:
+
+- internal/platform/auth/platform_store.go
+- internal/platform/controlapi/login.go
+- scripts/seed-platform-superadmin.ps1
+- scripts/verify-all.ps1
+
+Behavior:
+
+- Failed platform login writes control.platform_auth.login_failed audit row.
+- Platform users track failed_login_count, last_failed_login_at, and locked_until.
+- Five failed logins temporarily lock the platform user.
+- Locked login attempts return HTTP 423.
+- The dev superadmin seed script resets local lockout state.
+
+Reason:
+
+- Platform auth should have basic brute-force protection groundwork.
+
+Current next step:
+
+- Apply migration 000006_platform_login_security.
+- Restart control-plane-api.
+- Run verify-platform-login-security.ps1.
+- Run verify-all.ps1.
+- Commit after success.

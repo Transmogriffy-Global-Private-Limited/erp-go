@@ -42,6 +42,11 @@ func (a *App) platformLoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	session, err := a.platformAuth.LoginSuperadmin(r.Context(), input.Email, input.Password, 24*time.Hour)
 	if err != nil {
+		if errors.Is(err, auth.ErrPlatformLoginLocked) {
+			httpx.Error(w, http.StatusLocked, "platform_login_locked", "platform login is temporarily locked")
+			return
+		}
+
 		if errors.Is(err, auth.ErrInvalidPlatformLogin) {
 			httpx.Error(w, http.StatusUnauthorized, "invalid_platform_login", "invalid platform login")
 			return

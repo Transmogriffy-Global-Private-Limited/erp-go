@@ -1026,3 +1026,29 @@ New verification script:
 Next recommended step:
 
 - Verify and commit.
+
+## 2026-07-01 update
+
+Failed platform login audit and lockout groundwork was added.
+
+New migration:
+
+- 000006_platform_login_security
+
+New audited action:
+
+- control.platform_auth.login_failed
+
+New verification script:
+
+- scripts/verify-platform-login-security.ps1
+
+Updated behavior:
+
+- Five failed platform login attempts lock the platform user for fifteen minutes.
+- Locked logins return HTTP 423.
+
+Next recommended step:
+
+- Apply migration 000006.
+- Verify and commit.

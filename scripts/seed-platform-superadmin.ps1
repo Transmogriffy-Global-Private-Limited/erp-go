@@ -24,7 +24,10 @@ INSERT INTO control.platform_users (
     display_name,
     status,
     role,
-    password_hash
+    password_hash,
+    failed_login_count,
+    last_failed_login_at,
+    locked_until
 )
 VALUES (
     '$PlatformUserID',
@@ -32,7 +35,10 @@ VALUES (
     '$DisplayName',
     'active',
     'superadmin',
-    crypt('$Password', gen_salt('bf'))
+    crypt('$Password', gen_salt('bf')),
+    0,
+    NULL,
+    NULL
 )
 ON CONFLICT (id) DO UPDATE
 SET email = EXCLUDED.email,
@@ -40,9 +46,20 @@ SET email = EXCLUDED.email,
     status = EXCLUDED.status,
     role = EXCLUDED.role,
     password_hash = EXCLUDED.password_hash,
+    failed_login_count = 0,
+    last_failed_login_at = NULL,
+    locked_until = NULL,
     updated_at = now();
 
-SELECT id, email, display_name, status, role, password_hash IS NOT NULL AS has_password
+SELECT
+    id,
+    email,
+    display_name,
+    status,
+    role,
+    password_hash IS NOT NULL AS has_password,
+    failed_login_count,
+    locked_until
 FROM control.platform_users
 WHERE id = '$PlatformUserID';
 "@
