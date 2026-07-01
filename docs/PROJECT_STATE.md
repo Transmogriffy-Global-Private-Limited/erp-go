@@ -769,3 +769,20 @@ Next recommended step:
 
 - Run verify-all.ps1.
 - Commit after success.
+
+## 2026-07-01 update
+
+Temporary control-plane auth guard was successfully verified.
+
+Verified behavior:
+
+- /healthz remains public.
+- /control/v1/modules without X-Platform-User-ID returns 401.
+- /control/v1/modules with wrong X-Platform-Role returns 403.
+- /control/v1/modules with X-Platform-Role: superadmin returns 200.
+- verify-all.ps1 passed after updating verification scripts.
+
+Result:
+
+- Control-plane APIs are no longer open in local development.
+- Temporary superadmin guard is working.

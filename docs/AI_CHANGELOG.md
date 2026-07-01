@@ -746,3 +746,19 @@ Current next step:
 - Restart control-plane-api.
 - Run verify-all.ps1.
 - Commit after verification succeeds.
+
+## 2026-07-01
+
+### Verified temporary control-plane auth guard
+
+Verified:
+
+- public health endpoints still work
+- control-plane endpoints reject missing platform identity
+- control-plane endpoints reject non-superadmin role
+- control-plane endpoints allow temporary superadmin headers
+- verify-all.ps1 passed
+
+Result:
+
+- Temporary control-plane auth guard is working.
