@@ -106,3 +106,43 @@ Verification:
 Current next step:
 
 - Add base database migrations for control/core/outbox and tenant isolation foundations.
+
+## 2026-07-01
+
+### Added database foundation migration
+
+Added initial SQL migrations:
+
+- migrations/README.md
+- migrations/000001_platform_foundation.up.sql
+- migrations/000001_platform_foundation.down.sql
+
+Added ADR:
+
+- docs/decisions/0004-database-foundation-rls.md
+
+The migration establishes:
+
+- control plane schemas/tables
+- tenant subscription/module entitlement tables
+- ERP tenant user/RBAC base tables
+- document metadata table
+- audit log table
+- outbox events table
+- sample inventory.items tenant-owned table
+- core.current_tenant_id()
+- Row Level Security policies for tenant-owned tables
+
+Reason:
+
+- Tenant isolation must exist at the data layer early.
+- The system needs control plane and ERP plane database foundations before real modules.
+
+Verification:
+
+- Run go test ./...
+- SQL execution will be verified after adding local Postgres/dev migration runner.
+
+Current next step:
+
+- Add local development infrastructure using Docker Compose for PostgreSQL, Redis, NATS, and object storage.

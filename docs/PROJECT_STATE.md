@@ -257,3 +257,20 @@ New manifests:
 Next recommended step:
 
 - Add base database migrations for control/core/outbox and tenant isolation foundations.
+
+## 2026-07-01 update
+
+Database foundation migration was added.
+
+New files:
+
+- migrations/README.md
+- migrations/000001_platform_foundation.up.sql
+- migrations/000001_platform_foundation.down.sql
+- docs/decisions/0004-database-foundation-rls.md
+
+The migration creates schemas, control plane tables, tenant user/RBAC base, documents, audit, outbox, and sample inventory.items with RLS.
+
+Next recommended step:
+
+- Add Docker Compose infrastructure for local PostgreSQL, Redis, NATS JetStream, and S3-compatible object storage.
