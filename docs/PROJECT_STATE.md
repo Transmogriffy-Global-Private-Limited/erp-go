@@ -742,3 +742,30 @@ Next recommended step:
 
 - Run scripts/verify-all.ps1.
 - Commit after success.
+
+## 2026-07-01 update
+
+Temporary control-plane auth guard was added.
+
+New temporary headers:
+
+- X-Platform-User-ID
+- X-Platform-Role: superadmin
+
+Protected route family:
+
+- /control/v1/*
+
+Public route family:
+
+- /healthz
+- /healthz/db
+
+New verification script:
+
+- scripts/verify-control-plane-auth.ps1
+
+Next recommended step:
+
+- Run verify-all.ps1.
+- Commit after success.

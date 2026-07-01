@@ -9,6 +9,7 @@ This repository currently contains the first bootable backend spine:
 - control-plane-api
 - erp-api
 - erp-worker
+- temporary control-plane auth guard
 - shared HTTP response helpers
 - tenant context helper
 - temporary user context helper
@@ -25,52 +26,35 @@ This repository currently contains the first bootable backend spine:
 - DB-backed outbox worker v1
 - master verification script
 
-## Control Plane
+## Temporary local identity
 
-The control plane manages platform concerns:
+Control-plane APIs require:
 
-- tenants
-- plans
-- subscriptions
-- licensing
-- module entitlements
-- support access
-- superadmin users
+- X-Platform-User-ID
+- X-Platform-Role: superadmin
 
-## ERP Plane
+ERP APIs currently use:
 
-The ERP plane manages tenant business runtime:
+- X-Tenant-ID
+- X-User-ID
 
-- tenant users
-- roles and permissions
-- modules
-- documents
-- workflow
-- inventory
-- sales
-- purchase
-- accounting
+These are placeholders until real authentication is introduced.
 
-Mutation pattern:
+## Verification
 
-- business row
-- audit row
-- outbox event
-- one transaction
+With control-plane-api and erp-api running:
 
-Worker pattern:
+.\scripts\verify-all.ps1
 
-- claim outbox events
-- process event
-- mark published
+Individual checks:
 
-## Local database
-
-This project uses native PostgreSQL for local development.
-
-It does not use Docker or containers.
-
-Use .env.example as the template and create a local .env.
+.\scripts\db-check.ps1
+.\scripts\verify-control-plane-auth.ps1
+.\scripts\verify-rbac.ps1
+.\scripts\verify-tenant-isolation.ps1
+.\scripts\verify-module-entitlement.ps1
+.\scripts\verify-audit-outbox.ps1
+.\scripts\verify-outbox-worker.ps1
 
 ## Run locally
 
@@ -89,37 +73,6 @@ ERP worker once:
 ERP worker continuous:
 
 .\scripts\run-erp-worker.ps1
-
-## Verification
-
-With control-plane-api and erp-api running, verify the full project spine:
-
-.\scripts\verify-all.ps1
-
-Individual checks:
-
-.\scripts\db-check.ps1
-.\scripts\verify-rbac.ps1
-.\scripts\verify-tenant-isolation.ps1
-.\scripts\verify-module-entitlement.ps1
-.\scripts\verify-audit-outbox.ps1
-.\scripts\verify-outbox-worker.ps1
-
-## Temporary local identity
-
-Inventory items require:
-
-- X-Tenant-ID
-- X-User-ID
-
-Example:
-
-$headers = @{
-  "X-Tenant-ID" = "00000000-0000-0000-0000-000000000001"
-  "X-User-ID" = "11111111-1111-1111-1111-111111111111"
-}
-
-Invoke-RestMethod http://localhost:8080/api/v1/inventory/items -Headers $headers
 
 ## Project memory
 

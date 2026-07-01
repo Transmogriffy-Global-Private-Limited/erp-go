@@ -710,3 +710,39 @@ Current next step:
 
 - Run verify-all.ps1 with control-plane-api and erp-api running.
 - Commit after verification succeeds.
+
+## 2026-07-01
+
+### Added temporary control-plane auth guard
+
+Added:
+
+- scripts/verify-control-plane-auth.ps1
+- docs/decisions/0012-temporary-control-plane-auth-guard.md
+
+Updated:
+
+- cmd/control-plane-api/main.go
+- scripts/verify-all.ps1
+- scripts/verify-rbac.ps1
+- scripts/verify-module-entitlement.ps1
+- scripts/verify-audit-outbox.ps1
+- scripts/verify-outbox-worker.ps1
+- README.md
+- docs/NATIVE_LOCAL_DEV.md
+
+Behavior:
+
+- Health endpoints remain public.
+- /control/v1/* endpoints require X-Platform-User-ID and X-Platform-Role: superadmin.
+- Verification scripts now pass temporary superadmin headers when calling control-plane APIs.
+
+Reason:
+
+- Control-plane APIs manage platform-level state and must not remain open.
+
+Current next step:
+
+- Restart control-plane-api.
+- Run verify-all.ps1.
+- Commit after verification succeeds.

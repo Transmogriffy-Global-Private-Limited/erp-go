@@ -46,9 +46,9 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", app.healthHandler)
 	mux.HandleFunc("/healthz/db", app.dbHealthHandler)
-	mux.HandleFunc("/control/v1/tenants", app.tenantsHandler)
-	mux.HandleFunc("/control/v1/tenants/", app.tenantSubresourceHandler)
-	mux.HandleFunc("/control/v1/modules", app.modulesHandler)
+	mux.Handle("/control/v1/tenants", platformAuthMiddleware(http.HandlerFunc(app.tenantsHandler)))
+	mux.Handle("/control/v1/tenants/", platformAuthMiddleware(http.HandlerFunc(app.tenantSubresourceHandler)))
+	mux.Handle("/control/v1/modules", platformAuthMiddleware(http.HandlerFunc(app.modulesHandler)))
 
 	server := &http.Server{
 		Addr:              addr,
@@ -279,6 +279,25 @@ func (a *app) modulesHandler(w http.ResponseWriter, r *http.Request) {
 
 	httpx.JSON(w, http.StatusOK, map[string]any{
 		"modules": modules,
+	})
+}
+
+func platformAuthMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		platformUserID := strings.TrimSpace(r.Header.Get("X-Platform-User-ID"))
+		platformRole := strings.TrimSpace(r.Header.Get("X-Platform-Role"))
+
+		if platformUserID == "" {
+			httpx.Error(w, http.StatusUnauthorized, "platform_user_required", "X-Platform-User-ID header is required")
+			return
+		}
+
+		if platformRole != "superadmin" {
+			httpx.Error(w, http.StatusForbidden, "platform_superadmin_required", "X-Platform-Role must be superadmin")
+			return
+		}
+
+		next.ServeHTTP(w, r)
 	})
 }
 

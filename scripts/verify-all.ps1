@@ -63,6 +63,11 @@ Invoke-Step -Name "ERP API health" -Action {
   }
 }
 
+Invoke-Step -Name "Control-plane auth verification" -Action {
+  & (Join-Path $PSScriptRoot "verify-control-plane-auth.ps1") `
+    -ControlPlaneUrl $ControlPlaneUrl
+}
+
 Invoke-Step -Name "RBAC verification" -Action {
   & (Join-Path $PSScriptRoot "verify-rbac.ps1") `
     -BaseUrl $BaseUrl `

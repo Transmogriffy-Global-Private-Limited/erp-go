@@ -12,6 +12,11 @@ $ErrorActionPreference = "Stop"
 $RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 Set-Location $RepoRoot
 
+$PlatformHeaders = @{
+  "X-Platform-User-ID" = "00000000-0000-0000-0000-00000000aaaa"
+  "X-Platform-Role" = "superadmin"
+}
+
 Write-Host "Seeding tenant..."
 & (Join-Path $PSScriptRoot "seed-dev-tenant.ps1") -TenantID $TenantID -EnvFile $EnvFile
 
@@ -25,7 +30,7 @@ Write-Host "Seeding RBAC..."
 
 Write-Host ""
 Write-Host "Ensuring inventory module is enabled..."
-Invoke-RestMethod "$ControlPlaneUrl/control/v1/tenants/$TenantID/modules/inventory/enable" -Method Post | Out-Null
+Invoke-RestMethod "$ControlPlaneUrl/control/v1/tenants/$TenantID/modules/inventory/enable" -Method Post -Headers $PlatformHeaders | Out-Null
 
 $AllowedHeaders = @{
   "X-Tenant-ID" = $TenantID

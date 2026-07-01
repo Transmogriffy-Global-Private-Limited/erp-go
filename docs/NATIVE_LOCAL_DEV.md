@@ -10,39 +10,19 @@ Use .env as the local machine-specific file.
 
 Never commit .env.
 
-## Database URLs
-
-Three database URLs are currently used:
-
-- MIGRATION_DATABASE_URL
-- CONTROL_PLANE_DATABASE_URL
-- ERP_DATABASE_URL
-
-MIGRATION_DATABASE_URL is used by local migration scripts.
-
-CONTROL_PLANE_DATABASE_URL is used by control-plane-api.
-
-ERP_DATABASE_URL is used by erp-api and erp-worker.
-
-## Database roles
-
-Local development currently expects:
-
-- erp_owner
-- erp_app
-
-erp_owner owns the local database and applies migrations.
-
-erp_app is the application runtime role.
-
 ## Temporary local identity
 
-ERP APIs currently use temporary headers:
+Control-plane APIs currently require:
+
+- X-Platform-User-ID
+- X-Platform-Role: superadmin
+
+ERP APIs currently require:
 
 - X-Tenant-ID
 - X-User-ID
 
-X-User-ID is only a placeholder until real authentication is introduced.
+These are placeholders until real authentication is introduced.
 
 ## Run services
 
@@ -71,11 +51,26 @@ Run all checks:
 Individual checks:
 
 .\scripts\db-check.ps1
+.\scripts\verify-control-plane-auth.ps1
 .\scripts\verify-tenant-isolation.ps1
 .\scripts\verify-module-entitlement.ps1
 .\scripts\verify-rbac.ps1
 .\scripts\verify-audit-outbox.ps1
 .\scripts\verify-outbox-worker.ps1
+
+## Database URLs
+
+Three database URLs are currently used:
+
+- MIGRATION_DATABASE_URL
+- CONTROL_PLANE_DATABASE_URL
+- ERP_DATABASE_URL
+
+MIGRATION_DATABASE_URL is used by local migration scripts.
+
+CONTROL_PLANE_DATABASE_URL is used by control-plane-api.
+
+ERP_DATABASE_URL is used by erp-api and erp-worker.
 
 ## Dev tenants
 
@@ -96,26 +91,6 @@ Default allowed dev user:
 Default no-access dev user:
 
 22222222-2222-2222-2222-222222222222
-
-## Mutation verification
-
-Inventory item creation should create:
-
-- inventory.items row
-- audit.audit_log row
-- core.outbox_events row
-
-Use:
-
-.\scripts\verify-audit-outbox.ps1
-
-## Worker verification
-
-The DB-backed worker should claim pending outbox rows and mark them published.
-
-Use:
-
-.\scripts\verify-outbox-worker.ps1
 
 ## Migration ledger
 

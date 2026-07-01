@@ -11,6 +11,11 @@ $ErrorActionPreference = "Stop"
 $RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 Set-Location $RepoRoot
 
+$PlatformHeaders = @{
+  "X-Platform-User-ID" = "00000000-0000-0000-0000-00000000aaaa"
+  "X-Platform-Role" = "superadmin"
+}
+
 Write-Host "Seeding tenant..."
 & (Join-Path $PSScriptRoot "seed-dev-tenant.ps1") -TenantID $TenantID -EnvFile $EnvFile
 
@@ -25,13 +30,13 @@ $Headers = @{
 
 Write-Host ""
 Write-Host "Ensuring inventory is enabled first..."
-Invoke-RestMethod "$ControlPlaneUrl/control/v1/tenants/$TenantID/modules/inventory/enable" -Method Post | Out-Null
+Invoke-RestMethod "$ControlPlaneUrl/control/v1/tenants/$TenantID/modules/inventory/enable" -Method Post -Headers $PlatformHeaders | Out-Null
 
 Write-Host "Checking inventory API while enabled..."
 Invoke-RestMethod "$BaseUrl/api/v1/inventory/items" -Headers $Headers | Out-Null
 
 Write-Host "Disabling inventory..."
-Invoke-RestMethod "$ControlPlaneUrl/control/v1/tenants/$TenantID/modules/inventory/disable" -Method Post | Out-Null
+Invoke-RestMethod "$ControlPlaneUrl/control/v1/tenants/$TenantID/modules/inventory/disable" -Method Post -Headers $PlatformHeaders | Out-Null
 
 try {
   Write-Host "Checking inventory API while disabled. Expecting 403..."
@@ -53,7 +58,7 @@ catch {
 }
 finally {
   Write-Host "Re-enabling inventory..."
-  Invoke-RestMethod "$ControlPlaneUrl/control/v1/tenants/$TenantID/modules/inventory/enable" -Method Post | Out-Null
+  Invoke-RestMethod "$ControlPlaneUrl/control/v1/tenants/$TenantID/modules/inventory/enable" -Method Post -Headers $PlatformHeaders | Out-Null
 }
 
 Write-Host "Checking inventory API after re-enable..."

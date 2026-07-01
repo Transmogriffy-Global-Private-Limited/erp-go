@@ -17,6 +17,11 @@ if (-not $env:MIGRATION_DATABASE_URL) {
   throw "MIGRATION_DATABASE_URL is missing. Copy .env.example to .env and edit it."
 }
 
+$PlatformHeaders = @{
+  "X-Platform-User-ID" = "00000000-0000-0000-0000-00000000aaaa"
+  "X-Platform-Role" = "superadmin"
+}
+
 function Invoke-ScalarSql {
   param(
     [string] $Sql
@@ -40,7 +45,7 @@ Write-Host "Seeding RBAC..."
 
 Write-Host ""
 Write-Host "Ensuring inventory module is enabled..."
-Invoke-RestMethod "$ControlPlaneUrl/control/v1/tenants/$TenantID/modules/inventory/enable" -Method Post | Out-Null
+Invoke-RestMethod "$ControlPlaneUrl/control/v1/tenants/$TenantID/modules/inventory/enable" -Method Post -Headers $PlatformHeaders | Out-Null
 
 $Headers = @{
   "X-Tenant-ID" = $TenantID
