@@ -384,3 +384,26 @@ Next recommended step:
 - Apply 000002_runtime_role_grants.
 - Run scripts/db-check.ps1.
 - Start both APIs and verify /healthz/db.
+
+## 2026-07-01 update
+
+Migration script null-output handling was fixed.
+
+Problem:
+
+- Applying 000002_runtime_role_grants failed because scripts/apply-migration.ps1 called .Trim() on null when the migration was not yet in public.schema_migrations.
+
+Fix:
+
+- Capture psql output as an array.
+- Join output safely.
+- Trim the resulting string.
+
+Verified before this fix:
+
+- Database connectivity works for migration and runtime URLs.
+- Both APIs return db_ok on /healthz/db.
+
+Next recommended step:
+
+- Apply 000002_runtime_role_grants and verify migration ledger.

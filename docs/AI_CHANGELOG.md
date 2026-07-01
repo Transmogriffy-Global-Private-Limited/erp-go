@@ -279,3 +279,28 @@ Current next step:
 - Run database checks.
 - Start both APIs through scripts.
 - Verify /healthz/db on both services.
+
+## 2026-07-01
+
+### Fixed migration script null-output handling
+
+Updated:
+
+- scripts/apply-migration.ps1
+
+Reason:
+
+- psql -At returns no output when a migration is not yet present in public.schema_migrations.
+- PowerShell represented that empty output as null, causing .Trim() to fail.
+- The script now safely handles empty migration ledger results.
+
+Verified before this fix:
+
+- db-check.ps1 successfully connected with MIGRATION_DATABASE_URL, CONTROL_PLANE_DATABASE_URL, and ERP_DATABASE_URL.
+- control-plane-api /healthz/db returned db_ok.
+- erp-api /healthz/db returned db_ok.
+
+Current next step:
+
+- Apply 000002_runtime_role_grants.
+- Verify schema_migrations contains both 000001_platform_foundation and 000002_runtime_role_grants.

@@ -36,16 +36,18 @@ CREATE TABLE IF NOT EXISTS public.schema_migrations (
 );
 "@
 
-psql $env:MIGRATION_DATABASE_URL -v ON_ERROR_STOP=1 -c $EnsureLedgerSql
+psql $env:MIGRATION_DATABASE_URL -v ON_ERROR_STOP=1 -q -c $EnsureLedgerSql
 if ($LASTEXITCODE -ne 0) {
   throw "Failed to ensure public.schema_migrations."
 }
 
 $CheckSql = "SELECT 1 FROM public.schema_migrations WHERE name = '$Name';"
-$Applied = (psql $env:MIGRATION_DATABASE_URL -v ON_ERROR_STOP=1 -At -c $CheckSql).Trim()
+$AppliedOutput = @(psql $env:MIGRATION_DATABASE_URL -v ON_ERROR_STOP=1 -At -c $CheckSql)
 if ($LASTEXITCODE -ne 0) {
   throw "Failed to check migration status."
 }
+
+$Applied = ($AppliedOutput -join "").Trim()
 
 if ($Direction -eq "up" -and $Applied -eq "1") {
   Write-Host "Migration already applied: $Name"
@@ -66,7 +68,7 @@ if ($LASTEXITCODE -ne 0) {
 
 if ($Direction -eq "up") {
   $RecordSql = "INSERT INTO public.schema_migrations (name) VALUES ('$Name') ON CONFLICT (name) DO NOTHING;"
-  psql $env:MIGRATION_DATABASE_URL -v ON_ERROR_STOP=1 -c $RecordSql
+  psql $env:MIGRATION_DATABASE_URL -v ON_ERROR_STOP=1 -q -c $RecordSql
   if ($LASTEXITCODE -ne 0) {
     throw "Migration applied but failed to record ledger entry: $Name"
   }
@@ -74,7 +76,7 @@ if ($Direction -eq "up") {
 
 if ($Direction -eq "down") {
   $DeleteSql = "DELETE FROM public.schema_migrations WHERE name = '$Name';"
-  psql $env:MIGRATION_DATABASE_URL -v ON_ERROR_STOP=1 -c $DeleteSql
+  psql $env:MIGRATION_DATABASE_URL -v ON_ERROR_STOP=1 -q -c $DeleteSql
   if ($LASTEXITCODE -ne 0) {
     throw "Migration rolled back but failed to delete ledger entry: $Name"
   }
