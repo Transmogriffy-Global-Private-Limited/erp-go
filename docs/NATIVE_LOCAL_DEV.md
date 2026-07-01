@@ -57,13 +57,13 @@ Seed the default local dev tenant:
 
 .\scripts\seed-dev-tenant.ps1
 
-Seed a second local dev tenant:
-
-.\scripts\seed-dev-tenant.ps1 -TenantID "00000000-0000-0000-0000-000000000002" -Slug "dev-tenant-b" -LegalName "Dev Tenant B Private Limited" -DisplayName "Dev Tenant B"
-
 Verify tenant isolation through the ERP API:
 
 .\scripts\verify-tenant-isolation.ps1
+
+Verify module entitlement enforcement through control-plane and ERP APIs:
+
+.\scripts\verify-module-entitlement.ps1
 
 Run control plane API:
 

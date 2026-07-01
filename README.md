@@ -16,6 +16,7 @@ This repository currently contains the first bootable backend spine:
 - DB-backed module registry reads
 - DB-backed control-plane tenant APIs
 - control-plane tenant module entitlement APIs
+- ERP-side module entitlement enforcement
 - first tenant-owned Inventory items API
 - tenant-isolation verification script
 
@@ -54,6 +55,12 @@ The ERP plane manages tenant business runtime:
 - purchase
 - accounting
 
+Module-specific ERP APIs must be entitlement-guarded.
+
+Example:
+
+- GET /api/v1/inventory/items requires inventory to be enabled.
+
 ## Local database
 
 This project uses native PostgreSQL for local development.
@@ -78,6 +85,10 @@ Verify tenant isolation:
 
 .\scripts\verify-tenant-isolation.ps1
 
+Verify module entitlement enforcement:
+
+.\scripts\verify-module-entitlement.ps1
+
 ## Run locally
 
 Control plane API:
@@ -99,10 +110,6 @@ Module endpoints:
 
 Invoke-RestMethod http://localhost:8081/control/v1/modules
 Invoke-RestMethod http://localhost:8080/api/v1/modules -Headers @{ "X-Tenant-ID" = "00000000-0000-0000-0000-000000000001" }
-
-Tenant endpoints:
-
-Invoke-RestMethod http://localhost:8081/control/v1/tenants
 
 Tenant module entitlement endpoints:
 

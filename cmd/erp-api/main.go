@@ -48,7 +48,7 @@ func main() {
 	mux.HandleFunc("/healthz", app.healthHandler)
 	mux.HandleFunc("/healthz/db", app.dbHealthHandler)
 	mux.Handle("/api/v1/modules", tenantMiddleware(http.HandlerFunc(app.enabledModulesHandler)))
-	mux.Handle("/api/v1/inventory/items", tenantMiddleware(http.HandlerFunc(app.inventoryItemsHandler)))
+	mux.Handle("/api/v1/inventory/items", tenantMiddleware(app.requireModule("inventory", http.HandlerFunc(app.inventoryItemsHandler))))
 
 	server := &http.Server{
 		Addr:              addr,
@@ -182,6 +182,29 @@ func (a *app) createInventoryItem(w http.ResponseWriter, r *http.Request) {
 	httpx.JSON(w, http.StatusCreated, map[string]any{
 		"tenant_id": tenantID,
 		"item":      item,
+	})
+}
+
+func (a *app) requireModule(moduleID string, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tenantID, ok := tenancy.TenantIDFromContext(r.Context())
+		if !ok {
+			httpx.Error(w, http.StatusBadRequest, "tenant_required", "tenant context is required")
+			return
+		}
+
+		enabled, err := a.modules.IsEnabledForTenant(r.Context(), tenantID, moduleID)
+		if err != nil {
+			httpx.Error(w, http.StatusInternalServerError, "module_entitlement_check_failed", "failed to check module entitlement")
+			return
+		}
+
+		if !enabled {
+			httpx.Error(w, http.StatusForbidden, "module_not_enabled", "module is not enabled for this tenant")
+			return
+		}
+
+		next.ServeHTTP(w, r)
 	})
 }
 

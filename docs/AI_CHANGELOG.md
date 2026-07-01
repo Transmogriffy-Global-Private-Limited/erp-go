@@ -502,3 +502,35 @@ Result:
 Current next step:
 
 - Add ERP-side module entitlement enforcement so module-specific APIs are blocked when the module is disabled.
+
+## 2026-07-01
+
+### Added ERP-side module entitlement enforcement
+
+Added:
+
+- scripts/verify-module-entitlement.ps1
+- docs/decisions/0008-erp-module-entitlement-enforcement.md
+
+Updated:
+
+- internal/platform/modules/store.go
+- cmd/erp-api/main.go
+- README.md
+- docs/NATIVE_LOCAL_DEV.md
+
+Behavior:
+
+- ERP module APIs can now be guarded by tenant module entitlements.
+- /api/v1/inventory/items requires inventory to be enabled for the tenant.
+- If inventory is disabled, /api/v1/inventory/items returns 403 module_not_enabled.
+
+Reason:
+
+- Module visibility is not enough.
+- Module-specific ERP APIs must enforce licensing/module entitlement rules.
+
+Current next step:
+
+- Run verify-module-entitlement.ps1 with both APIs running.
+- Commit after verification succeeds.

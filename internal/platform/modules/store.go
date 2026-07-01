@@ -89,6 +89,28 @@ ORDER BY m.id
 	return modules, nil
 }
 
+// IsEnabledForTenant reports whether a module is enabled for a tenant.
+func (s Store) IsEnabledForTenant(ctx context.Context, tenantID string, moduleID string) (bool, error) {
+	var enabled bool
+
+	err := s.db.QueryRow(ctx, `
+SELECT EXISTS (
+SELECT 1
+FROM control.tenant_enabled_modules tem
+INNER JOIN control.modules m ON m.id = tem.module_id
+WHERE tem.tenant_id = $1
+  AND tem.module_id = $2
+  AND tem.disabled_at IS NULL
+  AND m.status <> 'disabled'
+)
+`, tenantID, moduleID).Scan(&enabled)
+	if err != nil {
+		return false, fmt.Errorf("check tenant module entitlement: %w", err)
+	}
+
+	return enabled, nil
+}
+
 // EnableForTenant enables a module for a tenant and returns the module record.
 func (s Store) EnableForTenant(ctx context.Context, tenantID string, moduleID string) (Module, error) {
 	var module Module

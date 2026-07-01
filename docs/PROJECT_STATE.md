@@ -565,3 +565,25 @@ Important next concern:
 
 - Module-specific ERP APIs are not yet entitlement-gated.
 - The next implementation step should prevent access to /api/v1/inventory/* when inventory is disabled for the tenant.
+
+## 2026-07-01 update
+
+ERP-side module entitlement enforcement was added.
+
+New guard behavior:
+
+- /api/v1/inventory/items requires inventory entitlement.
+- Disabled module access returns 403 with code module_not_enabled.
+
+New verification script:
+
+- scripts/verify-module-entitlement.ps1
+
+New ADR:
+
+- docs/decisions/0008-erp-module-entitlement-enforcement.md
+
+Next recommended step:
+
+- Run verify-module-entitlement.ps1.
+- Commit after verification succeeds.
