@@ -1356,3 +1356,25 @@ Behavior:
 Reason:
 
 - Keep cmd/erp-api/main.go closer to process boot only.
+
+## 2026-07-01
+
+### Extracted ERP health handlers
+
+Added:
+
+- cmd/erp-api/health_handlers.go
+- docs/decisions/0032-erp-health-handlers-extracted.md
+
+Updated:
+
+- cmd/erp-api/main.go
+
+Behavior:
+
+- No intended behavior change.
+- healthHandler and dbHealthHandler moved out of main.go.
+
+Reason:
+
+- Keep cmd/erp-api/main.go closer to process boot only.

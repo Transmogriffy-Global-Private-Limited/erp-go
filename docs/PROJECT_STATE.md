@@ -1181,3 +1181,20 @@ Moved functions:
 Next recommended step:
 
 - Run full verification and commit.
+
+## 2026-07-01 update
+
+ERP health handlers were extracted.
+
+New file:
+
+- cmd/erp-api/health_handlers.go
+
+Moved functions:
+
+- healthHandler
+- dbHealthHandler
+
+Next recommended step:
+
+- Run full verification and commit.
