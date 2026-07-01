@@ -368,3 +368,32 @@ Current next step:
 
 - Verify inventory item create/list through erp-api.
 - Confirm tenant-scoped access works through RLS.
+
+## 2026-07-01
+
+### Added tenant isolation verification script
+
+Updated:
+
+- scripts/seed-dev-tenant.ps1
+- README.md
+- docs/NATIVE_LOCAL_DEV.md
+
+Added:
+
+- scripts/verify-tenant-isolation.ps1
+
+Behavior:
+
+- seed-dev-tenant.ps1 can now seed arbitrary dev tenants.
+- verify-tenant-isolation.ps1 seeds tenant A and tenant B, creates an inventory item under tenant A, confirms tenant A can see it, and confirms tenant B cannot see it.
+
+Reason:
+
+- Tenant isolation must be verified through the actual ERP API path.
+- The first tenant-owned Inventory API should prove RLS-backed separation between tenants.
+
+Current next step:
+
+- Run verify-tenant-isolation.ps1 while erp-api is running.
+- Commit verification tooling if successful.

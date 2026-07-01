@@ -53,9 +53,17 @@ Mark an already-applied migration in the local migration ledger:
 
 .\scripts\mark-migration-applied.ps1 -Name 000001_platform_foundation
 
-Seed the local dev tenant:
+Seed the default local dev tenant:
 
 .\scripts\seed-dev-tenant.ps1
+
+Seed a second local dev tenant:
+
+.\scripts\seed-dev-tenant.ps1 -TenantID "00000000-0000-0000-0000-000000000002" -Slug "dev-tenant-b" -LegalName "Dev Tenant B Private Limited" -DisplayName "Dev Tenant B"
+
+Verify tenant isolation through the ERP API:
+
+.\scripts\verify-tenant-isolation.ps1
 
 Run control plane API:
 
@@ -65,13 +73,17 @@ Run ERP API:
 
 .\scripts\run-erp-api.ps1
 
-## Dev tenant
+## Dev tenants
 
-The local dev tenant ID is:
+Default local dev tenant:
 
 00000000-0000-0000-0000-000000000001
 
-The seed script enables all currently registered modules for this tenant.
+Second local dev tenant used for isolation checks:
+
+00000000-0000-0000-0000-000000000002
+
+The seed script enables all currently registered modules for each seeded tenant.
 
 ## Migration ledger
 

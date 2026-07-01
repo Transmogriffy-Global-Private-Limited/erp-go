@@ -15,6 +15,7 @@ This repository currently contains the first bootable backend spine:
 - native PowerShell migration workflow
 - DB-backed module registry reads
 - first tenant-owned Inventory items API
+- tenant-isolation verification script
 
 ## Control Plane
 
@@ -61,6 +62,14 @@ Apply a migration:
 Seed local dev tenant:
 
 .\scripts\seed-dev-tenant.ps1
+
+Seed a second local tenant:
+
+.\scripts\seed-dev-tenant.ps1 -TenantID "00000000-0000-0000-0000-000000000002" -Slug "dev-tenant-b" -LegalName "Dev Tenant B Private Limited" -DisplayName "Dev Tenant B"
+
+Verify tenant isolation:
+
+.\scripts\verify-tenant-isolation.ps1
 
 ## Run locally
 

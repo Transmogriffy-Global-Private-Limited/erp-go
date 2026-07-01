@@ -459,3 +459,22 @@ Next recommended step:
 
 - Verify Inventory item create/list using dev tenant.
 - Then add a second tenant seed/check to prove RLS isolation.
+
+## 2026-07-01 update
+
+Tenant isolation verification tooling was added.
+
+Updated:
+
+- scripts/seed-dev-tenant.ps1
+
+Added:
+
+- scripts/verify-tenant-isolation.ps1
+
+The verification script uses the ERP API to prove that an item created under tenant A is not visible under tenant B.
+
+Next recommended step:
+
+- Run scripts/verify-tenant-isolation.ps1.
+- Commit the verification tooling after success.

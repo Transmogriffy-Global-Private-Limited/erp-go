@@ -1,4 +1,8 @@
 param(
+  [string] $TenantID = "00000000-0000-0000-0000-000000000001",
+  [string] $Slug = "dev-tenant",
+  [string] $LegalName = "Dev Tenant Private Limited",
+  [string] $DisplayName = "Dev Tenant",
   [string] $EnvFile = ".env"
 )
 
@@ -22,10 +26,10 @@ INSERT INTO control.tenants (
     status
 )
 VALUES (
-    '00000000-0000-0000-0000-000000000001',
-    'dev-tenant',
-    'Dev Tenant Private Limited',
-    'Dev Tenant',
+    '$TenantID',
+    '$Slug',
+    '$LegalName',
+    '$DisplayName',
     'active'
 )
 ON CONFLICT (id) DO UPDATE
@@ -40,7 +44,7 @@ INSERT INTO control.tenant_enabled_modules (
     module_id
 )
 SELECT
-    '00000000-0000-0000-0000-000000000001',
+    '$TenantID',
     id
 FROM control.modules
 ON CONFLICT (tenant_id, module_id) DO UPDATE
@@ -53,14 +57,14 @@ SELECT
     array_agg(tem.module_id ORDER BY tem.module_id) AS enabled_modules
 FROM control.tenants t
 LEFT JOIN control.tenant_enabled_modules tem ON tem.tenant_id = t.id
-WHERE t.id = '00000000-0000-0000-0000-000000000001'
+WHERE t.id = '$TenantID'
 GROUP BY t.id, t.slug, t.status;
 "@
 
 psql $env:MIGRATION_DATABASE_URL -v ON_ERROR_STOP=1 -c $Sql
 if ($LASTEXITCODE -ne 0) {
-  throw "Failed to seed dev tenant."
+  throw "Failed to seed dev tenant: $TenantID"
 }
 
 Write-Host ""
-Write-Host "Dev tenant seeded."
+Write-Host "Dev tenant seeded: $TenantID"
