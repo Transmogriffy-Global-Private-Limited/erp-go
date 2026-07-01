@@ -195,3 +195,31 @@ Create minimal Go repo spine:
 - internal/platform/tenancy
 
 Do not start business modules before the platform spine boots.
+
+## 2026-07-01 update
+
+The minimal Go API spine was added.
+
+New backend entrypoints:
+
+- cmd/control-plane-api
+- cmd/erp-api
+
+New shared platform packages:
+
+- internal/platform/httpx
+- internal/platform/tenancy
+
+Current verification target:
+
+- gofmt ./cmd ./internal
+- go test ./...
+- go run ./cmd/control-plane-api
+- go run ./cmd/erp-api
+- Invoke-RestMethod http://localhost:8081/healthz
+- Invoke-RestMethod http://localhost:8080/healthz
+- Invoke-RestMethod http://localhost:8080/api/v1/modules -Headers @{ "X-Tenant-ID" = "00000000-0000-0000-0000-000000000001" }
+
+Next recommended step:
+
+- Add platform package directories and module manifests.

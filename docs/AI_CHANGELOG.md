@@ -31,3 +31,33 @@ Reason:
 Current next step:
 
 - Create minimal Go repo spine and bootable APIs.
+
+## 2026-07-01
+
+### Added minimal Go API spine
+
+Added the first bootable Go backend structure:
+
+- go.mod
+- .editorconfig
+- README.md
+- cmd/control-plane-api
+- cmd/erp-api
+- internal/platform/httpx
+- internal/platform/tenancy
+
+Reason:
+
+- Establish the first executable backend foundation.
+- Keep control plane and ERP plane separate from the beginning.
+- Provide a tenant-context placeholder before real auth is added.
+
+Verification:
+
+- Run gofmt.
+- Run go test ./...
+- Run both APIs and hit health endpoints.
+
+Current next step:
+
+- Add platform directory structure for auth, RBAC, licensing, modules, events, outbox, files, audit, and workflow.
