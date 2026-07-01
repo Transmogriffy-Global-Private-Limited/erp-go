@@ -452,3 +452,53 @@ Current next step:
 
 - Verify GET and POST /control/v1/tenants through control-plane-api.
 - Then add control-plane module enable/disable endpoint for tenants.
+
+## 2026-07-01
+
+### Added control-plane tenant module entitlement APIs
+
+Added:
+
+- docs/decisions/0007-control-plane-module-entitlements.md
+
+Updated:
+
+- internal/platform/modules/store.go
+- cmd/control-plane-api/main.go
+- README.md
+
+Behavior:
+
+- GET /control/v1/tenants/{tenant_id}/modules lists enabled modules for a tenant.
+- POST /control/v1/tenants/{tenant_id}/modules/{module_id}/enable enables a tenant module.
+- POST /control/v1/tenants/{tenant_id}/modules/{module_id}/disable disables a tenant module.
+
+Reason:
+
+- Module licensing/entitlements must be controlled through the control plane.
+- ERP runtime module visibility should reflect database entitlements.
+
+Current next step:
+
+- Verify disabling a module through control-plane removes it from ERP /api/v1/modules.
+- Verify enabling it restores it.
+
+## 2026-07-01
+
+### Verified control-plane module entitlement behavior
+
+Verified:
+
+- GET /control/v1/tenants/{tenant_id}/modules lists enabled modules.
+- POST /control/v1/tenants/{tenant_id}/modules/inventory/disable disables Inventory.
+- ERP GET /api/v1/modules reflects Inventory removal.
+- POST /control/v1/tenants/{tenant_id}/modules/inventory/enable re-enables Inventory.
+- ERP GET /api/v1/modules reflects Inventory restoration.
+
+Result:
+
+- Control-plane tenant module entitlements are connected to ERP runtime module visibility.
+
+Current next step:
+
+- Add ERP-side module entitlement enforcement so module-specific APIs are blocked when the module is disabled.

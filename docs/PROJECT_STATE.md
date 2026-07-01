@@ -525,3 +525,43 @@ Next recommended step:
 
 - Verify tenant list/create endpoints.
 - Then add tenant module enable/disable endpoints.
+
+## 2026-07-01 update
+
+Control-plane tenant module entitlement APIs were added.
+
+New endpoints:
+
+- GET /control/v1/tenants/{tenant_id}/modules
+- POST /control/v1/tenants/{tenant_id}/modules/{module_id}/enable
+- POST /control/v1/tenants/{tenant_id}/modules/{module_id}/disable
+
+New ADR:
+
+- docs/decisions/0007-control-plane-module-entitlements.md
+
+Next recommended step:
+
+- Verify entitlement disable/enable behavior through both control-plane and ERP module endpoints.
+
+## 2026-07-01 update
+
+Control-plane tenant module entitlement APIs were verified.
+
+Verified flow:
+
+- Listed enabled modules for tenant 00000000-0000-0000-0000-000000000001
+- Disabled inventory through control-plane API
+- Confirmed inventory disappeared from control-plane tenant modules
+- Confirmed inventory disappeared from ERP /api/v1/modules
+- Re-enabled inventory through control-plane API
+- Confirmed inventory reappeared in ERP /api/v1/modules
+
+Result:
+
+- Control-plane module entitlements now affect ERP module visibility.
+
+Important next concern:
+
+- Module-specific ERP APIs are not yet entitlement-gated.
+- The next implementation step should prevent access to /api/v1/inventory/* when inventory is disabled for the tenant.
