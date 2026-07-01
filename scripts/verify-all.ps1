@@ -1,0 +1,101 @@
+param(
+  [string] $BaseUrl = "http://localhost:8080",
+  [string] $ControlPlaneUrl = "http://localhost:8081",
+  [string] $EnvFile = ".env"
+)
+
+$ErrorActionPreference = "Stop"
+
+$RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
+Set-Location $RepoRoot
+
+function Invoke-Step {
+  param(
+    [string] $Name,
+    [scriptblock] $Action
+  )
+
+  Write-Host ""
+  Write-Host "===== $Name ====="
+
+  try {
+    & $Action
+    Write-Host "PASS: $Name"
+  }
+  catch {
+    Write-Host "FAIL: $Name"
+    throw
+  }
+}
+
+Invoke-Step -Name "Go tests" -Action {
+  go test ./...
+  if ($LASTEXITCODE -ne 0) {
+    throw "go test ./... failed."
+  }
+}
+
+Invoke-Step -Name "Database connectivity" -Action {
+  & (Join-Path $PSScriptRoot "db-check.ps1") -EnvFile $EnvFile
+}
+
+Invoke-Step -Name "Control plane health" -Action {
+  $health = Invoke-RestMethod "$ControlPlaneUrl/healthz"
+  if ($health.status -ne "ok") {
+    throw "control-plane-api /healthz did not return ok."
+  }
+
+  $dbHealth = Invoke-RestMethod "$ControlPlaneUrl/healthz/db"
+  if ($dbHealth.status -ne "db_ok") {
+    throw "control-plane-api /healthz/db did not return db_ok."
+  }
+}
+
+Invoke-Step -Name "ERP API health" -Action {
+  $health = Invoke-RestMethod "$BaseUrl/healthz"
+  if ($health.status -ne "ok") {
+    throw "erp-api /healthz did not return ok."
+  }
+
+  $dbHealth = Invoke-RestMethod "$BaseUrl/healthz/db"
+  if ($dbHealth.status -ne "db_ok") {
+    throw "erp-api /healthz/db did not return db_ok."
+  }
+}
+
+Invoke-Step -Name "RBAC verification" -Action {
+  & (Join-Path $PSScriptRoot "verify-rbac.ps1") `
+    -BaseUrl $BaseUrl `
+    -ControlPlaneUrl $ControlPlaneUrl `
+    -EnvFile $EnvFile
+}
+
+Invoke-Step -Name "Tenant isolation verification" -Action {
+  & (Join-Path $PSScriptRoot "verify-tenant-isolation.ps1") `
+    -BaseUrl $BaseUrl `
+    -EnvFile $EnvFile
+}
+
+Invoke-Step -Name "Module entitlement verification" -Action {
+  & (Join-Path $PSScriptRoot "verify-module-entitlement.ps1") `
+    -BaseUrl $BaseUrl `
+    -ControlPlaneUrl $ControlPlaneUrl `
+    -EnvFile $EnvFile
+}
+
+Invoke-Step -Name "Audit/outbox verification" -Action {
+  & (Join-Path $PSScriptRoot "verify-audit-outbox.ps1") `
+    -BaseUrl $BaseUrl `
+    -ControlPlaneUrl $ControlPlaneUrl `
+    -EnvFile $EnvFile
+}
+
+Invoke-Step -Name "Outbox worker verification" -Action {
+  & (Join-Path $PSScriptRoot "verify-outbox-worker.ps1") `
+    -BaseUrl $BaseUrl `
+    -ControlPlaneUrl $ControlPlaneUrl `
+    -EnvFile $EnvFile
+}
+
+Write-Host ""
+Write-Host "All verification checks passed."

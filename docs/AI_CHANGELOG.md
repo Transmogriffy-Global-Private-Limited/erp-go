@@ -683,3 +683,30 @@ Current next step:
 - Run verify-outbox-worker.ps1.
 - Re-run verify-audit-outbox.ps1 and verify-rbac.ps1.
 - Commit after verification succeeds.
+
+## 2026-07-01
+
+### Added master verification script
+
+Added:
+
+- scripts/verify-all.ps1
+
+Updated:
+
+- README.md
+- docs/NATIVE_LOCAL_DEV.md
+
+Behavior:
+
+- verify-all.ps1 runs go tests, DB checks, API health checks, RBAC verification, tenant isolation verification, module entitlement verification, audit/outbox verification, and outbox worker verification.
+
+Reason:
+
+- The project now has multiple critical invariants.
+- A single command should verify the current ERP spine before future changes.
+
+Current next step:
+
+- Run verify-all.ps1 with control-plane-api and erp-api running.
+- Commit after verification succeeds.

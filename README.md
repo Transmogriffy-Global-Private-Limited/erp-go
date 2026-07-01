@@ -23,11 +23,7 @@ This repository currently contains the first bootable backend spine:
 - first tenant-owned Inventory items API
 - audit and outbox writes on Inventory item creation
 - DB-backed outbox worker v1
-- tenant-isolation verification script
-- module-entitlement verification script
-- RBAC verification script
-- audit/outbox verification script
-- outbox-worker verification script
+- master verification script
 
 ## Control Plane
 
@@ -76,38 +72,6 @@ It does not use Docker or containers.
 
 Use .env.example as the template and create a local .env.
 
-Check database connectivity:
-
-.\scripts\db-check.ps1
-
-Seed local dev tenant:
-
-.\scripts\seed-dev-tenant.ps1
-
-Seed local dev RBAC:
-
-.\scripts\seed-dev-rbac.ps1
-
-Verify tenant isolation:
-
-.\scripts\verify-tenant-isolation.ps1
-
-Verify module entitlement enforcement:
-
-.\scripts\verify-module-entitlement.ps1
-
-Verify RBAC permission enforcement:
-
-.\scripts\verify-rbac.ps1
-
-Verify audit/outbox mutation writes:
-
-.\scripts\verify-audit-outbox.ps1
-
-Verify outbox worker:
-
-.\scripts\verify-outbox-worker.ps1
-
 ## Run locally
 
 Control plane API:
@@ -125,6 +89,23 @@ ERP worker once:
 ERP worker continuous:
 
 .\scripts\run-erp-worker.ps1
+
+## Verification
+
+With control-plane-api and erp-api running, verify the full project spine:
+
+.\scripts\verify-all.ps1
+
+Individual checks:
+
+.\scripts\db-check.ps1
+.\scripts\verify-rbac.ps1
+.\scripts\verify-tenant-isolation.ps1
+.\scripts\verify-module-entitlement.ps1
+.\scripts\verify-audit-outbox.ps1
+.\scripts\verify-outbox-worker.ps1
+
+## Temporary local identity
 
 Inventory items require:
 

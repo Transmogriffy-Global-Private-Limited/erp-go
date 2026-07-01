@@ -717,3 +717,28 @@ Next recommended step:
 
 - Verify outbox worker.
 - Re-run audit/outbox and RBAC checks.
+
+## 2026-07-01 update
+
+Master verification script was added.
+
+New script:
+
+- scripts/verify-all.ps1
+
+It verifies:
+
+- go test ./...
+- database connectivity
+- control-plane health
+- ERP API health
+- RBAC
+- tenant isolation
+- module entitlement enforcement
+- audit/outbox mutation writes
+- DB-backed outbox worker
+
+Next recommended step:
+
+- Run scripts/verify-all.ps1.
+- Commit after success.

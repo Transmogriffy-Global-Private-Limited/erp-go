@@ -44,39 +44,7 @@ ERP APIs currently use temporary headers:
 
 X-User-ID is only a placeholder until real authentication is introduced.
 
-## Scripts
-
-Check DB connectivity:
-
-.\scripts\db-check.ps1
-
-Seed the default local dev tenant:
-
-.\scripts\seed-dev-tenant.ps1
-
-Seed local dev RBAC users/roles:
-
-.\scripts\seed-dev-rbac.ps1
-
-Verify tenant isolation through the ERP API:
-
-.\scripts\verify-tenant-isolation.ps1
-
-Verify module entitlement enforcement through control-plane and ERP APIs:
-
-.\scripts\verify-module-entitlement.ps1
-
-Verify RBAC permission enforcement:
-
-.\scripts\verify-rbac.ps1
-
-Verify audit/outbox writes:
-
-.\scripts\verify-audit-outbox.ps1
-
-Verify outbox worker:
-
-.\scripts\verify-outbox-worker.ps1
+## Run services
 
 Run control plane API:
 
@@ -93,6 +61,21 @@ Run ERP worker once:
 Run ERP worker continuously:
 
 .\scripts\run-erp-worker.ps1
+
+## Verification
+
+Run all checks:
+
+.\scripts\verify-all.ps1
+
+Individual checks:
+
+.\scripts\db-check.ps1
+.\scripts\verify-tenant-isolation.ps1
+.\scripts\verify-module-entitlement.ps1
+.\scripts\verify-rbac.ps1
+.\scripts\verify-audit-outbox.ps1
+.\scripts\verify-outbox-worker.ps1
 
 ## Dev tenants
 
