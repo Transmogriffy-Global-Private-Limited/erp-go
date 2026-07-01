@@ -534,3 +534,22 @@ Current next step:
 
 - Run verify-module-entitlement.ps1 with both APIs running.
 - Commit after verification succeeds.
+
+## 2026-07-01
+
+### Verified ERP module entitlement enforcement
+
+Verified:
+
+- scripts/verify-module-entitlement.ps1 passed
+- Inventory API works while inventory is enabled
+- Inventory API returns 403 while inventory is disabled
+- Inventory API works again after re-enable
+
+Result:
+
+- ERP-side licensing/module entitlement wall is working.
+
+Current next step:
+
+- Add tenant user/RBAC foundation and protect Inventory item APIs with permissions.

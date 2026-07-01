@@ -587,3 +587,29 @@ Next recommended step:
 
 - Run verify-module-entitlement.ps1.
 - Commit after verification succeeds.
+
+## 2026-07-01 update
+
+ERP-side module entitlement enforcement was successfully verified.
+
+Verified flow:
+
+- Ensured inventory module was enabled for tenant 00000000-0000-0000-0000-000000000001
+- Confirmed /api/v1/inventory/items worked while inventory was enabled
+- Disabled inventory through control-plane API
+- Confirmed /api/v1/inventory/items returned 403 while inventory was disabled
+- Re-enabled inventory
+- Confirmed /api/v1/inventory/items worked again
+
+Result:
+
+- Module entitlement enforcement verification passed.
+
+This proves:
+
+- Control-plane entitlement changes affect ERP API access.
+- ERP module APIs are now protected by module enablement, not merely hidden from /api/v1/modules.
+
+Current next recommended step:
+
+- Add tenant users, roles, permissions, and basic ERP permission enforcement.
