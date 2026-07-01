@@ -312,3 +312,22 @@ Next recommended step:
 - Create local PostgreSQL roles/database.
 - Copy .env.example to .env.
 - Run database check and first migration.
+
+## 2026-07-01 update
+
+Native migration scripts were hardened.
+
+Updated scripts now check native psql exit codes.
+
+Added migration ledger support using:
+
+- public.schema_migrations
+
+Added helper:
+
+- scripts/mark-migration-applied.ps1
+
+Next recommended step:
+
+- Mark the already-applied 000001_platform_foundation migration as applied.
+- Verify apply-migration.ps1 skips it on rerun.

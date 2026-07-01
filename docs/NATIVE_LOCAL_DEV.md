@@ -34,3 +34,15 @@ Apply migration:
 Rollback migration:
 
 .\scripts\apply-migration.ps1 -Direction down
+
+Mark an already-applied migration in the local migration ledger:
+
+.\scripts\mark-migration-applied.ps1 -Name 000001_platform_foundation
+
+## Migration ledger
+
+The native migration script uses:
+
+public.schema_migrations
+
+This prevents accidentally rerunning migrations that have already been applied.

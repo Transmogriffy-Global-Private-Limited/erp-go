@@ -196,3 +196,28 @@ Current next step:
 - Copy .env.example to .env.
 - Run scripts/db-check.ps1.
 - Apply the first migration.
+
+## 2026-07-01
+
+### Hardened native migration scripts
+
+Updated:
+
+- scripts/db-check.ps1
+- scripts/apply-migration.ps1
+- docs/NATIVE_LOCAL_DEV.md
+
+Added:
+
+- scripts/mark-migration-applied.ps1
+
+Reason:
+
+- Native PowerShell commands do not always stop on psql failure unless LASTEXITCODE is checked.
+- The first migration was already applied manually before migration tracking existed.
+- A migration ledger is needed to avoid accidentally rerunning already-applied migrations.
+
+Current next step:
+
+- Mark 000001_platform_foundation as applied in public.schema_migrations.
+- Re-run apply-migration.ps1 and confirm it skips the already-applied migration.

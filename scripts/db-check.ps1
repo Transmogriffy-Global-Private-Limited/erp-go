@@ -15,10 +15,16 @@ if (-not $env:MIGRATION_DATABASE_URL) {
 
 Write-Host "Checking psql availability..."
 psql --version
+if ($LASTEXITCODE -ne 0) {
+  throw "psql is not available or failed to run."
+}
 
 Write-Host ""
 Write-Host "Checking database connection..."
 psql $env:MIGRATION_DATABASE_URL -v ON_ERROR_STOP=1 -c "SELECT current_database() AS database, current_user AS user_name;"
+if ($LASTEXITCODE -ne 0) {
+  throw "Database connection check failed."
+}
 
 Write-Host ""
 Write-Host "Database check passed."
