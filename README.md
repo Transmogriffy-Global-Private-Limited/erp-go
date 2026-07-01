@@ -12,6 +12,7 @@ This repository currently contains the first bootable backend spine:
 - tenant context helper
 - shared PostgreSQL runtime connection helper
 - native PowerShell migration workflow
+- DB-backed module registry reads
 
 ## Control Plane
 
@@ -55,6 +56,10 @@ Apply a migration:
 
 .\scripts\apply-migration.ps1 -Name 000002_runtime_role_grants -Direction up
 
+Seed local dev tenant:
+
+.\scripts\seed-dev-tenant.ps1
+
 ## Run locally
 
 Control plane API:
@@ -72,8 +77,9 @@ Invoke-RestMethod http://localhost:8081/healthz/db
 Invoke-RestMethod http://localhost:8080/healthz
 Invoke-RestMethod http://localhost:8080/healthz/db
 
-Tenant-scoped ERP endpoint:
+Module endpoints:
 
+Invoke-RestMethod http://localhost:8081/control/v1/modules
 Invoke-RestMethod http://localhost:8080/api/v1/modules -Headers @{ "X-Tenant-ID" = "00000000-0000-0000-0000-000000000001" }
 
 ## Project memory

@@ -304,3 +304,35 @@ Current next step:
 
 - Apply 000002_runtime_role_grants.
 - Verify schema_migrations contains both 000001_platform_foundation and 000002_runtime_role_grants.
+
+## 2026-07-01
+
+### Made module endpoints database-backed
+
+Added:
+
+- internal/platform/modules/store.go
+- scripts/seed-dev-tenant.ps1
+
+Updated:
+
+- cmd/control-plane-api/main.go
+- cmd/erp-api/main.go
+- README.md
+- docs/NATIVE_LOCAL_DEV.md
+
+Behavior:
+
+- GET /control/v1/modules now reads from control.modules.
+- GET /api/v1/modules now reads enabled modules from control.tenant_enabled_modules for the supplied tenant.
+- Local dev tenant 00000000-0000-0000-0000-000000000001 can be seeded through scripts/seed-dev-tenant.ps1.
+
+Reason:
+
+- Remove hardcoded module lists from APIs.
+- Start using the database as the source of truth for module registry and tenant entitlements.
+
+Current next step:
+
+- Seed local dev tenant.
+- Verify both module endpoints return DB-backed data.

@@ -407,3 +407,29 @@ Verified before this fix:
 Next recommended step:
 
 - Apply 000002_runtime_role_grants and verify migration ledger.
+
+## 2026-07-01 update
+
+Module APIs are now database-backed.
+
+New store:
+
+- internal/platform/modules/store.go
+
+Updated endpoints:
+
+- GET /control/v1/modules reads from control.modules.
+- GET /api/v1/modules reads from enabled tenant modules.
+
+New local helper:
+
+- scripts/seed-dev-tenant.ps1
+
+Local dev tenant:
+
+- 00000000-0000-0000-0000-000000000001
+
+Next recommended step:
+
+- Run seed-dev-tenant.ps1.
+- Verify module endpoints from both services.

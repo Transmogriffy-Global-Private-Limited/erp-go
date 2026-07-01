@@ -11,11 +11,13 @@ import (
 
 	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/db"
 	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/httpx"
+	platformmodules "github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/modules"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type app struct {
-	db *pgxpool.Pool
+	db      *pgxpool.Pool
+	modules platformmodules.Store
 }
 
 func main() {
@@ -32,7 +34,8 @@ func main() {
 	defer pool.Close()
 
 	app := &app{
-		db: pool,
+		db:      pool,
+		modules: platformmodules.NewStore(pool),
 	}
 
 	mux := http.NewServeMux()
@@ -108,13 +111,14 @@ func (a *app) modulesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	modules, err := a.modules.ListAll(r.Context())
+	if err != nil {
+		httpx.Error(w, http.StatusInternalServerError, "modules_query_failed", "failed to load modules")
+		return
+	}
+
 	httpx.JSON(w, http.StatusOK, map[string]any{
-		"modules": []map[string]any{
-			{"id": "inventory", "name": "Inventory", "status": "planned"},
-			{"id": "sales", "name": "Sales", "status": "planned"},
-			{"id": "purchase", "name": "Purchase", "status": "planned"},
-			{"id": "accounting", "name": "Accounting", "status": "planned"},
-		},
+		"modules": modules,
 	})
 }
 

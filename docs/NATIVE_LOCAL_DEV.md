@@ -53,6 +53,10 @@ Mark an already-applied migration in the local migration ledger:
 
 .\scripts\mark-migration-applied.ps1 -Name 000001_platform_foundation
 
+Seed the local dev tenant:
+
+.\scripts\seed-dev-tenant.ps1
+
 Run control plane API:
 
 .\scripts\run-control-plane-api.ps1
@@ -60,6 +64,14 @@ Run control plane API:
 Run ERP API:
 
 .\scripts\run-erp-api.ps1
+
+## Dev tenant
+
+The local dev tenant ID is:
+
+00000000-0000-0000-0000-000000000001
+
+The seed script enables all currently registered modules for this tenant.
 
 ## Migration ledger
 

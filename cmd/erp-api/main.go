@@ -11,12 +11,14 @@ import (
 
 	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/db"
 	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/httpx"
+	platformmodules "github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/modules"
 	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/tenancy"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type app struct {
-	db *pgxpool.Pool
+	db      *pgxpool.Pool
+	modules platformmodules.Store
 }
 
 func main() {
@@ -33,7 +35,8 @@ func main() {
 	defer pool.Close()
 
 	app := &app{
-		db: pool,
+		db:      pool,
+		modules: platformmodules.NewStore(pool),
 	}
 
 	mux := http.NewServeMux()
@@ -95,14 +98,15 @@ func (a *app) enabledModulesHandler(w http.ResponseWriter, r *http.Request) {
 
 	tenantID, _ := tenancy.TenantIDFromContext(r.Context())
 
+	modules, err := a.modules.ListEnabledForTenant(r.Context(), tenantID)
+	if err != nil {
+		httpx.Error(w, http.StatusInternalServerError, "tenant_modules_query_failed", "failed to load tenant modules")
+		return
+	}
+
 	httpx.JSON(w, http.StatusOK, map[string]any{
 		"tenant_id": tenantID,
-		"modules": []map[string]any{
-			{"id": "inventory", "name": "Inventory", "status": "planned"},
-			{"id": "sales", "name": "Sales", "status": "planned"},
-			{"id": "purchase", "name": "Purchase", "status": "planned"},
-			{"id": "accounting", "name": "Accounting", "status": "planned"},
-		},
+		"modules":   modules,
 	})
 }
 
