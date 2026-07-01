@@ -88,3 +88,60 @@ ORDER BY m.id
 
 	return modules, nil
 }
+
+// EnableForTenant enables a module for a tenant and returns the module record.
+func (s Store) EnableForTenant(ctx context.Context, tenantID string, moduleID string) (Module, error) {
+	var module Module
+
+	err := s.db.QueryRow(ctx, `
+WITH enabled AS (
+INSERT INTO control.tenant_enabled_modules (
+tenant_id,
+module_id,
+enabled_at,
+disabled_at
+)
+VALUES (
+$1,
+$2,
+now(),
+NULL
+)
+ON CONFLICT (tenant_id, module_id) DO UPDATE
+SET enabled_at = now(),
+    disabled_at = NULL
+RETURNING module_id
+)
+SELECT m.id, m.name, m.status
+FROM enabled e
+INNER JOIN control.modules m ON m.id = e.module_id
+`, tenantID, moduleID).Scan(&module.ID, &module.Name, &module.Status)
+	if err != nil {
+		return Module{}, fmt.Errorf("enable tenant module: %w", err)
+	}
+
+	return module, nil
+}
+
+// DisableForTenant disables a module for a tenant and returns the module record.
+func (s Store) DisableForTenant(ctx context.Context, tenantID string, moduleID string) (Module, error) {
+	var module Module
+
+	err := s.db.QueryRow(ctx, `
+WITH disabled AS (
+UPDATE control.tenant_enabled_modules
+SET disabled_at = now()
+WHERE tenant_id = $1
+  AND module_id = $2
+RETURNING module_id
+)
+SELECT m.id, m.name, m.status
+FROM disabled d
+INNER JOIN control.modules m ON m.id = d.module_id
+`, tenantID, moduleID).Scan(&module.ID, &module.Name, &module.Status)
+	if err != nil {
+		return Module{}, fmt.Errorf("disable tenant module: %w", err)
+	}
+
+	return module, nil
+}

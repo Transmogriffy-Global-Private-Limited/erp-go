@@ -47,6 +47,7 @@ func main() {
 	mux.HandleFunc("/healthz", app.healthHandler)
 	mux.HandleFunc("/healthz/db", app.dbHealthHandler)
 	mux.HandleFunc("/control/v1/tenants", app.tenantsHandler)
+	mux.HandleFunc("/control/v1/tenants/", app.tenantSubresourceHandler)
 	mux.HandleFunc("/control/v1/modules", app.modulesHandler)
 
 	server := &http.Server{
@@ -160,6 +161,107 @@ func (a *app) createTenant(w http.ResponseWriter, r *http.Request) {
 
 	httpx.JSON(w, http.StatusCreated, map[string]any{
 		"tenant": tenant,
+	})
+}
+
+func (a *app) tenantSubresourceHandler(w http.ResponseWriter, r *http.Request) {
+	tenantID, moduleID, action, ok := parseTenantModulePath(r.URL.Path)
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+
+	switch action {
+	case "list":
+		if r.Method != http.MethodGet {
+			httpx.MethodNotAllowed(w, http.MethodGet)
+			return
+		}
+
+		a.listTenantModules(w, r, tenantID)
+
+	case "enable":
+		if r.Method != http.MethodPost {
+			httpx.MethodNotAllowed(w, http.MethodPost)
+			return
+		}
+
+		a.enableTenantModule(w, r, tenantID, moduleID)
+
+	case "disable":
+		if r.Method != http.MethodPost {
+			httpx.MethodNotAllowed(w, http.MethodPost)
+			return
+		}
+
+		a.disableTenantModule(w, r, tenantID, moduleID)
+
+	default:
+		http.NotFound(w, r)
+	}
+}
+
+func parseTenantModulePath(path string) (tenantID string, moduleID string, action string, ok bool) {
+	const prefix = "/control/v1/tenants/"
+
+	if !strings.HasPrefix(path, prefix) {
+		return "", "", "", false
+	}
+
+	rest := strings.Trim(strings.TrimPrefix(path, prefix), "/")
+	parts := strings.Split(rest, "/")
+
+	if len(parts) == 2 && parts[0] != "" && parts[1] == "modules" {
+		return parts[0], "", "list", true
+	}
+
+	if len(parts) == 4 && parts[0] != "" && parts[1] == "modules" && parts[2] != "" {
+		if parts[3] == "enable" || parts[3] == "disable" {
+			return parts[0], parts[2], parts[3], true
+		}
+	}
+
+	return "", "", "", false
+}
+
+func (a *app) listTenantModules(w http.ResponseWriter, r *http.Request, tenantID string) {
+	modules, err := a.modules.ListEnabledForTenant(r.Context(), tenantID)
+	if err != nil {
+		httpx.Error(w, http.StatusInternalServerError, "tenant_modules_query_failed", "failed to load tenant modules")
+		return
+	}
+
+	httpx.JSON(w, http.StatusOK, map[string]any{
+		"tenant_id": tenantID,
+		"modules":   modules,
+	})
+}
+
+func (a *app) enableTenantModule(w http.ResponseWriter, r *http.Request, tenantID string, moduleID string) {
+	module, err := a.modules.EnableForTenant(r.Context(), tenantID, moduleID)
+	if err != nil {
+		httpx.Error(w, http.StatusInternalServerError, "tenant_module_enable_failed", "failed to enable tenant module")
+		return
+	}
+
+	httpx.JSON(w, http.StatusOK, map[string]any{
+		"tenant_id": tenantID,
+		"module":    module,
+		"enabled":   true,
+	})
+}
+
+func (a *app) disableTenantModule(w http.ResponseWriter, r *http.Request, tenantID string, moduleID string) {
+	module, err := a.modules.DisableForTenant(r.Context(), tenantID, moduleID)
+	if err != nil {
+		httpx.Error(w, http.StatusInternalServerError, "tenant_module_disable_failed", "failed to disable tenant module")
+		return
+	}
+
+	httpx.JSON(w, http.StatusOK, map[string]any{
+		"tenant_id": tenantID,
+		"module":    module,
+		"enabled":   false,
 	})
 }
 

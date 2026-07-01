@@ -15,6 +15,7 @@ This repository currently contains the first bootable backend spine:
 - native PowerShell migration workflow
 - DB-backed module registry reads
 - DB-backed control-plane tenant APIs
+- control-plane tenant module entitlement APIs
 - first tenant-owned Inventory items API
 - tenant-isolation verification script
 
@@ -35,6 +36,9 @@ Current control-plane endpoints:
 - GET /control/v1/modules
 - GET /control/v1/tenants
 - POST /control/v1/tenants
+- GET /control/v1/tenants/{tenant_id}/modules
+- POST /control/v1/tenants/{tenant_id}/modules/{module_id}/enable
+- POST /control/v1/tenants/{tenant_id}/modules/{module_id}/disable
 
 ## ERP Plane
 
@@ -70,10 +74,6 @@ Seed local dev tenant:
 
 .\scripts\seed-dev-tenant.ps1
 
-Seed a second local tenant:
-
-.\scripts\seed-dev-tenant.ps1 -TenantID "00000000-0000-0000-0000-000000000002" -Slug "dev-tenant-b" -LegalName "Dev Tenant B Private Limited" -DisplayName "Dev Tenant B"
-
 Verify tenant isolation:
 
 .\scripts\verify-tenant-isolation.ps1
@@ -104,26 +104,19 @@ Tenant endpoints:
 
 Invoke-RestMethod http://localhost:8081/control/v1/tenants
 
-$tenant = @{
-  slug = "sample-tenant"
-  legal_name = "Sample Tenant Private Limited"
-  display_name = "Sample Tenant"
-  status = "trial"
-} | ConvertTo-Json
+Tenant module entitlement endpoints:
 
-Invoke-RestMethod http://localhost:8081/control/v1/tenants -Method Post -ContentType "application/json" -Body $tenant
+$tenantID = "00000000-0000-0000-0000-000000000001"
+
+Invoke-RestMethod "http://localhost:8081/control/v1/tenants/$tenantID/modules"
+
+Invoke-RestMethod "http://localhost:8081/control/v1/tenants/$tenantID/modules/inventory/disable" -Method Post
+
+Invoke-RestMethod "http://localhost:8081/control/v1/tenants/$tenantID/modules/inventory/enable" -Method Post
 
 Inventory items:
 
 Invoke-RestMethod http://localhost:8080/api/v1/inventory/items -Headers @{ "X-Tenant-ID" = "00000000-0000-0000-0000-000000000001" }
-
-$item = @{
-  sku = "DEV-ITEM-001"
-  name = "Dev Item 001"
-  description = "First dev inventory item"
-} | ConvertTo-Json
-
-Invoke-RestMethod http://localhost:8080/api/v1/inventory/items -Method Post -ContentType "application/json" -Headers @{ "X-Tenant-ID" = "00000000-0000-0000-0000-000000000001" } -Body $item
 
 ## Project memory
 
