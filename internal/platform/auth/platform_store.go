@@ -31,6 +31,16 @@ type PlatformSession struct {
 	ExpiresAt      time.Time `json:"expires_at"`
 }
 
+type PlatformSessionRecord struct {
+	ID             string     `json:"id"`
+	PlatformUserID string     `json:"platform_user_id"`
+	Status         string     `json:"status"`
+	ExpiresAt      time.Time  `json:"expires_at"`
+	LastSeenAt     *time.Time `json:"last_seen_at,omitempty"`
+	RevokedAt      *time.Time `json:"revoked_at,omitempty"`
+	CreatedAt      time.Time  `json:"created_at"`
+}
+
 func NewStore(db *pgxpool.Pool) Store {
 	return Store{
 		db: db,
@@ -287,6 +297,67 @@ RETURNING u.id::text
 	return platformUserID, true, nil
 }
 
+func (s Store) ListActiveSessions(ctx context.Context, platformUserID string) ([]PlatformSessionRecord, error) {
+	rows, err := s.db.Query(ctx, `
+SELECT
+id::text,
+platform_user_id::text,
+status,
+expires_at,
+last_seen_at,
+revoked_at,
+created_at
+FROM control.platform_sessions
+WHERE platform_user_id = $1
+  AND status = 'active'
+  AND revoked_at IS NULL
+  AND expires_at > now()
+ORDER BY created_at DESC, id DESC
+`, platformUserID)
+	if err != nil {
+		return nil, fmt.Errorf("query active platform sessions: %w", err)
+	}
+	defer rows.Close()
+
+	sessions := make([]PlatformSessionRecord, 0)
+
+	for rows.Next() {
+		var session PlatformSessionRecord
+		var lastSeenAt sql.NullTime
+		var revokedAt sql.NullTime
+
+		if err := rows.Scan(
+			&session.ID,
+			&session.PlatformUserID,
+			&session.Status,
+			&session.ExpiresAt,
+			&lastSeenAt,
+			&revokedAt,
+			&session.CreatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("scan platform session: %w", err)
+		}
+
+		if lastSeenAt.Valid {
+			value := lastSeenAt.Time
+			session.LastSeenAt = &value
+		}
+
+		if revokedAt.Valid {
+			value := revokedAt.Time
+			session.RevokedAt = &value
+		}
+
+		sessions = append(sessions, session)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate platform sessions: %w", err)
+	}
+
+	return sessions, nil
+}
+
 func (s Store) RevokeSession(ctx context.Context, token string) (bool, error) {
 	if token == "" {
 		return false, nil
@@ -340,6 +411,92 @@ RETURNING id::text, platform_user_id::text
 	}
 
 	return true, nil
+}
+
+func (s Store) RevokeAllSessions(ctx context.Context, platformUserID string) (int64, error) {
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("begin platform revoke-all transaction: %w", err)
+	}
+
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
+
+	tag, err := tx.Exec(ctx, `
+UPDATE control.platform_sessions
+SET status = 'revoked',
+    revoked_at = now()
+WHERE platform_user_id = $1
+  AND status = 'active'
+  AND revoked_at IS NULL
+`, platformUserID)
+	if err != nil {
+		return 0, fmt.Errorf("revoke all platform sessions: %w", err)
+	}
+
+	revokedCount := tag.RowsAffected()
+
+	if err := audit.InsertPlatform(ctx, tx, audit.PlatformEntry{
+		PlatformActorID: platformUserID,
+		Action:          "control.platform_auth.revoke_all_sessions",
+		TargetType:      "control.platform_user",
+		TargetID:        platformUserID,
+		Metadata: map[string]any{
+			"revoked_count": revokedCount,
+		},
+	}); err != nil {
+		return 0, err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return 0, fmt.Errorf("commit platform revoke-all transaction: %w", err)
+	}
+
+	return revokedCount, nil
+}
+
+func (s Store) CleanupExpiredSessions(ctx context.Context, platformActorID string) (int64, error) {
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("begin platform session cleanup transaction: %w", err)
+	}
+
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
+
+	tag, err := tx.Exec(ctx, `
+UPDATE control.platform_sessions
+SET status = 'revoked',
+    revoked_at = now()
+WHERE status = 'active'
+  AND revoked_at IS NULL
+  AND expires_at <= now()
+`)
+	if err != nil {
+		return 0, fmt.Errorf("cleanup expired platform sessions: %w", err)
+	}
+
+	revokedCount := tag.RowsAffected()
+
+	if err := audit.InsertPlatform(ctx, tx, audit.PlatformEntry{
+		PlatformActorID: platformActorID,
+		Action:          "control.platform_auth.cleanup_expired_sessions",
+		TargetType:      "control.platform_sessions",
+		TargetID:        "expired",
+		Metadata: map[string]any{
+			"revoked_count": revokedCount,
+		},
+	}); err != nil {
+		return 0, err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return 0, fmt.Errorf("commit platform session cleanup transaction: %w", err)
+	}
+
+	return revokedCount, nil
 }
 
 var ErrInvalidPlatformLogin = errors.New("invalid platform login")

@@ -35,6 +35,9 @@ func NewHandler(pool *pgxpool.Pool) http.Handler {
 	mux.HandleFunc("/healthz/db", app.dbHealthHandler)
 	mux.HandleFunc("/control/v1/auth/login", app.platformLoginHandler)
 	mux.Handle("/control/v1/auth/logout", app.platformAuthMiddleware(http.HandlerFunc(app.platformLogoutHandler)))
+	mux.Handle("/control/v1/auth/sessions", app.platformAuthMiddleware(http.HandlerFunc(app.platformSessionsHandler)))
+	mux.Handle("/control/v1/auth/sessions/revoke-all", app.platformAuthMiddleware(http.HandlerFunc(app.platformRevokeAllSessionsHandler)))
+	mux.Handle("/control/v1/auth/sessions/cleanup-expired", app.platformAuthMiddleware(http.HandlerFunc(app.platformCleanupExpiredSessionsHandler)))
 
 	mux.Handle("/control/v1/tenants", app.platformAuthMiddleware(http.HandlerFunc(app.tenantsHandler)))
 	mux.Handle("/control/v1/tenants/", app.platformAuthMiddleware(http.HandlerFunc(app.tenantSubresourceHandler)))

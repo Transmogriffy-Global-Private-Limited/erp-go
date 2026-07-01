@@ -1155,3 +1155,37 @@ Current next step:
 - Run verify-platform-login-security.ps1.
 - Run verify-all.ps1.
 - Commit after success.
+
+## 2026-07-01
+
+### Added platform session management
+
+Added:
+
+- scripts/verify-platform-session-management.ps1
+- docs/decisions/0024-platform-session-management.md
+
+Updated:
+
+- internal/platform/auth/platform_store.go
+- internal/platform/controlapi/login.go
+- internal/platform/controlapi/server.go
+- scripts/verify-all.ps1
+
+Behavior:
+
+- GET /control/v1/auth/sessions lists active sessions for the current platform user.
+- POST /control/v1/auth/sessions/revoke-all revokes all active sessions for the current platform user.
+- POST /control/v1/auth/sessions/cleanup-expired revokes expired active sessions.
+- verify-platform-session-management.ps1 proves two sessions can be listed and then revoked.
+
+Reason:
+
+- Platform auth needs basic session visibility and cleanup/revoke controls.
+
+Current next step:
+
+- Restart control-plane-api.
+- Run verify-platform-session-management.ps1.
+- Run verify-all.ps1.
+- Commit after success.

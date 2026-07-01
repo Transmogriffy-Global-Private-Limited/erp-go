@@ -1052,3 +1052,21 @@ Next recommended step:
 
 - Apply migration 000006.
 - Verify and commit.
+
+## 2026-07-01 update
+
+Platform session management was added.
+
+New endpoints:
+
+- GET /control/v1/auth/sessions
+- POST /control/v1/auth/sessions/revoke-all
+- POST /control/v1/auth/sessions/cleanup-expired
+
+New verification script:
+
+- scripts/verify-platform-session-management.ps1
+
+Next recommended step:
+
+- Verify and commit.

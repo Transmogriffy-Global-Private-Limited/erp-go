@@ -90,3 +90,72 @@ func (a *App) platformLogoutHandler(w http.ResponseWriter, r *http.Request) {
 		"logged_out": true,
 	})
 }
+
+func (a *App) platformSessionsHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		httpx.MethodNotAllowed(w, http.MethodGet)
+		return
+	}
+
+	platformUserID, ok := auth.PlatformUserIDFromContext(r.Context())
+	if !ok {
+		httpx.Error(w, http.StatusUnauthorized, "platform_user_required", "platform user context is required")
+		return
+	}
+
+	sessions, err := a.platformAuth.ListActiveSessions(r.Context(), platformUserID)
+	if err != nil {
+		httpx.Error(w, http.StatusInternalServerError, "platform_sessions_query_failed", "failed to load platform sessions")
+		return
+	}
+
+	httpx.JSON(w, http.StatusOK, map[string]any{
+		"sessions": sessions,
+	})
+}
+
+func (a *App) platformRevokeAllSessionsHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		httpx.MethodNotAllowed(w, http.MethodPost)
+		return
+	}
+
+	platformUserID, ok := auth.PlatformUserIDFromContext(r.Context())
+	if !ok {
+		httpx.Error(w, http.StatusUnauthorized, "platform_user_required", "platform user context is required")
+		return
+	}
+
+	revokedCount, err := a.platformAuth.RevokeAllSessions(r.Context(), platformUserID)
+	if err != nil {
+		httpx.Error(w, http.StatusInternalServerError, "platform_revoke_all_failed", "failed to revoke platform sessions")
+		return
+	}
+
+	httpx.JSON(w, http.StatusOK, map[string]any{
+		"revoked_count": revokedCount,
+	})
+}
+
+func (a *App) platformCleanupExpiredSessionsHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		httpx.MethodNotAllowed(w, http.MethodPost)
+		return
+	}
+
+	platformUserID, ok := auth.PlatformUserIDFromContext(r.Context())
+	if !ok {
+		httpx.Error(w, http.StatusUnauthorized, "platform_user_required", "platform user context is required")
+		return
+	}
+
+	revokedCount, err := a.platformAuth.CleanupExpiredSessions(r.Context(), platformUserID)
+	if err != nil {
+		httpx.Error(w, http.StatusInternalServerError, "platform_session_cleanup_failed", "failed to cleanup expired platform sessions")
+		return
+	}
+
+	httpx.JSON(w, http.StatusOK, map[string]any{
+		"revoked_count": revokedCount,
+	})
+}
