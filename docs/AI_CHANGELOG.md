@@ -1334,3 +1334,25 @@ Behavior:
 Reason:
 
 - Inventory session migration exposed route wiring fragility.
+
+## 2026-07-01
+
+### Extracted ERP middleware and guards
+
+Added:
+
+- cmd/erp-api/middleware.go
+- docs/decisions/0030-erp-middleware-extracted.md
+
+Updated:
+
+- cmd/erp-api/main.go
+
+Behavior:
+
+- No intended behavior change.
+- requireModule, requirePermission, tenantMiddleware, and userMiddleware moved out of main.go.
+
+Reason:
+
+- Keep cmd/erp-api/main.go closer to process boot only.

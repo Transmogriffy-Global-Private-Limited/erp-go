@@ -1162,3 +1162,22 @@ It prevents Inventory route/session/module-entitlement regressions.
 Next recommended step:
 
 - Run full verification and commit.
+
+## 2026-07-01 update
+
+ERP middleware and guard functions were extracted.
+
+New file:
+
+- cmd/erp-api/middleware.go
+
+Moved functions:
+
+- requireModule
+- requirePermission
+- tenantMiddleware
+- userMiddleware
+
+Next recommended step:
+
+- Run full verification and commit.
