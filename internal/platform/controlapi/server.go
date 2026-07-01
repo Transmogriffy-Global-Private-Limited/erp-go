@@ -34,6 +34,7 @@ func NewHandler(pool *pgxpool.Pool) http.Handler {
 	mux.HandleFunc("/healthz", app.healthHandler)
 	mux.HandleFunc("/healthz/db", app.dbHealthHandler)
 	mux.HandleFunc("/control/v1/auth/login", app.platformLoginHandler)
+	mux.Handle("/control/v1/auth/logout", app.platformAuthMiddleware(http.HandlerFunc(app.platformLogoutHandler)))
 
 	mux.Handle("/control/v1/tenants", app.platformAuthMiddleware(http.HandlerFunc(app.tenantsHandler)))
 	mux.Handle("/control/v1/tenants/", app.platformAuthMiddleware(http.HandlerFunc(app.tenantSubresourceHandler)))

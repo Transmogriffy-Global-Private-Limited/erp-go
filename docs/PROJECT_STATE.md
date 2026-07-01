@@ -988,3 +988,24 @@ Updated verification:
 Next recommended step:
 
 - Run full verification and commit.
+
+## 2026-07-01 update
+
+Platform logout/session revoke was added.
+
+New endpoint:
+
+- POST /control/v1/auth/logout
+
+New verification script:
+
+- scripts/verify-platform-logout.ps1
+
+Updated behavior:
+
+- Logout revokes the current platform session.
+- Revoked session tokens are rejected.
+
+Next recommended step:
+
+- Verify and commit.

@@ -57,3 +57,31 @@ func (a *App) platformLoginHandler(w http.ResponseWriter, r *http.Request) {
 		"expires_at":       session.ExpiresAt,
 	})
 }
+
+func (a *App) platformLogoutHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		httpx.MethodNotAllowed(w, http.MethodPost)
+		return
+	}
+
+	sessionToken := strings.TrimSpace(r.Header.Get("X-Platform-Session"))
+	if sessionToken == "" {
+		httpx.Error(w, http.StatusUnauthorized, "platform_session_required", "X-Platform-Session header is required")
+		return
+	}
+
+	revoked, err := a.platformAuth.RevokeSession(r.Context(), sessionToken)
+	if err != nil {
+		httpx.Error(w, http.StatusInternalServerError, "platform_logout_failed", "platform logout failed")
+		return
+	}
+
+	if !revoked {
+		httpx.Error(w, http.StatusForbidden, "platform_session_invalid", "platform session is invalid or already revoked")
+		return
+	}
+
+	httpx.JSON(w, http.StatusOK, map[string]any{
+		"logged_out": true,
+	})
+}

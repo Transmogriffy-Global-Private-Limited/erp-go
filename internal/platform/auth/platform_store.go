@@ -132,6 +132,28 @@ RETURNING u.id::text
 	return platformUserID, true, nil
 }
 
+func (s Store) RevokeSession(ctx context.Context, token string) (bool, error) {
+	if token == "" {
+		return false, nil
+	}
+
+	tokenHash := hashToken(token)
+
+	tag, err := s.db.Exec(ctx, `
+UPDATE control.platform_sessions
+SET status = 'revoked',
+    revoked_at = now()
+WHERE token_hash = $1
+  AND status = 'active'
+  AND revoked_at IS NULL
+`, tokenHash)
+	if err != nil {
+		return false, fmt.Errorf("revoke platform session: %w", err)
+	}
+
+	return tag.RowsAffected() > 0, nil
+}
+
 var ErrInvalidPlatformLogin = errors.New("invalid platform login")
 
 func randomToken() (string, error) {

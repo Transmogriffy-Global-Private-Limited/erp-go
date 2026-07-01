@@ -1053,3 +1053,36 @@ Current next step:
 - Run verify-control-plane-auth.ps1.
 - Run verify-all.ps1.
 - Commit after success.
+
+## 2026-07-01
+
+### Added platform logout/session revoke
+
+Added:
+
+- scripts/verify-platform-logout.ps1
+- docs/decisions/0021-platform-logout-revokes-sessions.md
+
+Updated:
+
+- internal/platform/auth/platform_store.go
+- internal/platform/controlapi/login.go
+- internal/platform/controlapi/server.go
+- scripts/verify-all.ps1
+
+Behavior:
+
+- POST /control/v1/auth/logout revokes the current platform session.
+- Revoked sessions are rejected on future control-plane requests.
+- verify-platform-logout.ps1 proves a session works before logout and fails after logout.
+
+Reason:
+
+- Platform sessions need explicit lifecycle control.
+
+Current next step:
+
+- Restart control-plane-api.
+- Run verify-platform-logout.ps1.
+- Run verify-all.ps1.
+- Commit after success.
