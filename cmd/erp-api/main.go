@@ -22,10 +22,11 @@ import (
 )
 
 type app struct {
-	db        *pgxpool.Pool
-	modules   platformmodules.Store
-	rbac      rbac.Store
-	inventory inventory.Store
+	db             *pgxpool.Pool
+	modules        platformmodules.Store
+	rbac           rbac.Store
+	inventory      inventory.Store
+	tenantSessions auth.TenantSessionStore
 }
 
 func main() {
@@ -42,13 +43,17 @@ func main() {
 	defer pool.Close()
 
 	app := &app{
-		db:        pool,
-		modules:   platformmodules.NewStore(pool),
-		rbac:      rbac.NewStore(pool),
-		inventory: inventory.NewStore(pool),
+		db:             pool,
+		modules:        platformmodules.NewStore(pool),
+		rbac:           rbac.NewStore(pool),
+		inventory:      inventory.NewStore(pool),
+		tenantSessions: auth.NewTenantSessionStore(pool),
 	}
 
 	mux := http.NewServeMux()
+	mux.HandleFunc("/api/v1/auth/login", app.tenantLoginHandler)
+	mux.HandleFunc("/api/v1/auth/me", app.tenantMeHandler)
+	mux.HandleFunc("/api/v1/auth/logout", app.tenantLogoutHandler)
 	mux.HandleFunc("/healthz", app.healthHandler)
 	mux.HandleFunc("/healthz/db", app.dbHealthHandler)
 	mux.Handle("/api/v1/modules", tenantMiddleware(http.HandlerFunc(app.enabledModulesHandler)))

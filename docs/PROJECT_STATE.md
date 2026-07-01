@@ -1070,3 +1070,31 @@ New verification script:
 Next recommended step:
 
 - Verify and commit.
+
+## 2026-07-01 update
+
+Tenant-user ERP session foundation was added.
+
+New endpoints:
+
+- POST /api/v1/auth/login
+- GET /api/v1/auth/me
+- POST /api/v1/auth/logout
+
+New session table:
+
+- core.tenant_user_sessions
+
+New verification script:
+
+- scripts/verify-tenant-session.ps1
+
+Temporary state:
+
+- ERP auth session exists.
+- Existing business APIs still accept X-User-ID.
+
+Next recommended step:
+
+- Verify tenant sessions.
+- Then migrate protected ERP APIs to X-ERP-Session.

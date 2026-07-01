@@ -66,6 +66,12 @@ Invoke-Step -Name "ERP API health" -Action {
     throw "erp-api /healthz/db did not return db_ok."
   }
 }
+Invoke-Step -Name "Tenant session verification" -Action {
+  & (Join-Path $PSScriptRoot "verify-tenant-session.ps1") `
+    -BaseUrl $BaseUrl `
+    -ControlPlaneUrl $ControlPlaneUrl `
+    -EnvFile $EnvFile
+}
 
 Invoke-Step -Name "Control-plane auth verification" -Action {
   & (Join-Path $PSScriptRoot "verify-control-plane-auth.ps1") `
@@ -153,3 +159,4 @@ Invoke-Step -Name "Outbox worker verification" -Action {
 
 Write-Host ""
 Write-Host "All verification checks passed."
+

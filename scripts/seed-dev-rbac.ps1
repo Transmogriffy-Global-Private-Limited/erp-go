@@ -4,6 +4,8 @@ param(
   [string] $NoAccessUserID = "22222222-2222-2222-2222-222222222222",
   [string] $AllowedRoleID = "33333333-3333-3333-3333-333333333333",
   [string] $NoAccessRoleID = "44444444-4444-4444-4444-444444444444",
+  [string] $AllowedPassword = "dev-tenant-password",
+  [string] $NoAccessPassword = "dev-noaccess-password",
   [string] $EnvFile = ".env"
 )
 
@@ -31,7 +33,8 @@ INSERT INTO core.tenant_users (
     tenant_id,
     email,
     display_name,
-    status
+    status,
+    password_hash
 )
 VALUES
     (
@@ -39,19 +42,22 @@ VALUES
         '$TenantID',
         '$AllowedEmail',
         'Dev Inventory Allowed User',
-        'active'
+        'active',
+        crypt('$AllowedPassword', gen_salt('bf'))
     ),
     (
         '$NoAccessUserID',
         '$TenantID',
         '$NoAccessEmail',
         'Dev No Access User',
-        'active'
+        'active',
+        crypt('$NoAccessPassword', gen_salt('bf'))
     )
 ON CONFLICT (id) DO UPDATE
 SET email = EXCLUDED.email,
     display_name = EXCLUDED.display_name,
     status = EXCLUDED.status,
+    password_hash = EXCLUDED.password_hash,
     updated_at = now();
 
 INSERT INTO core.roles (
@@ -102,6 +108,8 @@ SELECT
     tu.tenant_id,
     tu.id AS user_id,
     tu.email,
+    tu.status,
+    tu.password_hash IS NOT NULL AS has_password,
     array_agg(r.name ORDER BY r.name) AS roles
 FROM core.tenant_users tu
 LEFT JOIN core.user_roles ur
@@ -112,7 +120,7 @@ LEFT JOIN core.roles r
    AND r.id = ur.role_id
 WHERE tu.tenant_id = '$TenantID'
   AND tu.id IN ('$AllowedUserID', '$NoAccessUserID')
-GROUP BY tu.tenant_id, tu.id, tu.email
+GROUP BY tu.tenant_id, tu.id, tu.email, tu.status, tu.password_hash
 ORDER BY tu.email;
 
 COMMIT;
@@ -126,4 +134,6 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host ""
 Write-Host "Dev RBAC seeded for tenant: $TenantID"
 Write-Host "Allowed user: $AllowedUserID"
+Write-Host "Allowed email: $AllowedEmail"
 Write-Host "No-access user: $NoAccessUserID"
+Write-Host "No-access email: $NoAccessEmail"

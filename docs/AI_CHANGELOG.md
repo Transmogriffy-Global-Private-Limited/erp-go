@@ -1189,3 +1189,41 @@ Current next step:
 - Run verify-platform-session-management.ps1.
 - Run verify-all.ps1.
 - Commit after success.
+
+## 2026-07-01
+
+### Added tenant-user ERP session foundation
+
+Added:
+
+- migrations/000007_tenant_user_sessions.up.sql
+- migrations/000007_tenant_user_sessions.down.sql
+- internal/platform/auth/tenant_session_store.go
+- cmd/erp-api/auth_handlers.go
+- scripts/verify-tenant-session.ps1
+- docs/decisions/0025-tenant-user-erp-sessions.md
+
+Updated:
+
+- scripts/seed-dev-rbac.ps1
+- cmd/erp-api/main.go
+- scripts/verify-all.ps1
+
+Behavior:
+
+- POST /api/v1/auth/login authenticates a tenant user and returns session_token.
+- GET /api/v1/auth/me resolves X-Tenant-ID + X-ERP-Session.
+- POST /api/v1/auth/logout revokes the ERP session.
+- Existing business APIs still use X-User-ID for this step.
+
+Reason:
+
+- ERP APIs need tenant-user login/session groundwork before removing temporary X-User-ID headers.
+
+Current next step:
+
+- Apply migration 000007_tenant_user_sessions.
+- Restart erp-api.
+- Run verify-tenant-session.ps1.
+- Run verify-all.ps1.
+- Commit after success.
