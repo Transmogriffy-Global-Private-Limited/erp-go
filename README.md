@@ -20,9 +20,11 @@ This repository currently contains the first bootable backend spine:
 - ERP-side module entitlement enforcement
 - ERP-side RBAC permission enforcement
 - first tenant-owned Inventory items API
+- audit and outbox writes on Inventory item creation
 - tenant-isolation verification script
 - module-entitlement verification script
 - RBAC verification script
+- audit/outbox verification script
 
 ## Control Plane
 
@@ -35,15 +37,6 @@ The control plane manages platform concerns:
 - module entitlements
 - support access
 - superadmin users
-
-Current control-plane endpoints:
-
-- GET /control/v1/modules
-- GET /control/v1/tenants
-- POST /control/v1/tenants
-- GET /control/v1/tenants/{tenant_id}/modules
-- POST /control/v1/tenants/{tenant_id}/modules/{module_id}/enable
-- POST /control/v1/tenants/{tenant_id}/modules/{module_id}/disable
 
 ## ERP Plane
 
@@ -59,19 +52,16 @@ The ERP plane manages tenant business runtime:
 - purchase
 - accounting
 
-Module-specific ERP APIs must be entitlement-guarded and permission-guarded.
+Mutation pattern:
 
-Current Inventory permission rules:
+- business row
+- audit row
+- outbox event
+- one transaction
 
-- GET /api/v1/inventory/items requires inventory.item.read
-- POST /api/v1/inventory/items requires inventory.item.write
+Current Inventory mutation:
 
-Temporary local identity:
-
-- X-Tenant-ID
-- X-User-ID
-
-X-User-ID is a placeholder until real authentication is introduced.
+- POST /api/v1/inventory/items writes inventory.items, audit.audit_log, and core.outbox_events.
 
 ## Local database
 
@@ -84,10 +74,6 @@ Use .env.example as the template and create a local .env.
 Check database connectivity:
 
 .\scripts\db-check.ps1
-
-Apply a migration:
-
-.\scripts\apply-migration.ps1 -Name 000002_runtime_role_grants -Direction up
 
 Seed local dev tenant:
 
@@ -109,6 +95,10 @@ Verify RBAC permission enforcement:
 
 .\scripts\verify-rbac.ps1
 
+Verify audit/outbox mutation writes:
+
+.\scripts\verify-audit-outbox.ps1
+
 ## Run locally
 
 Control plane API:
@@ -119,19 +109,12 @@ ERP API:
 
 .\scripts\run-erp-api.ps1
 
-Health checks:
+Inventory items require:
 
-Invoke-RestMethod http://localhost:8081/healthz
-Invoke-RestMethod http://localhost:8081/healthz/db
-Invoke-RestMethod http://localhost:8080/healthz
-Invoke-RestMethod http://localhost:8080/healthz/db
+- X-Tenant-ID
+- X-User-ID
 
-Module endpoints:
-
-Invoke-RestMethod http://localhost:8081/control/v1/modules
-Invoke-RestMethod http://localhost:8080/api/v1/modules -Headers @{ "X-Tenant-ID" = "00000000-0000-0000-0000-000000000001" }
-
-Inventory items:
+Example:
 
 $headers = @{
   "X-Tenant-ID" = "00000000-0000-0000-0000-000000000001"

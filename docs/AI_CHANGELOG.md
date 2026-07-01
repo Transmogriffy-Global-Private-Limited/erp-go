@@ -592,3 +592,58 @@ Current next step:
 - Run verify-rbac.ps1.
 - Re-run verify-tenant-isolation.ps1 and verify-module-entitlement.ps1.
 - Commit after all verification passes.
+
+## 2026-07-01
+
+### Added audit and outbox writes for Inventory item creation
+
+Added:
+
+- internal/platform/audit/audit.go
+- internal/platform/outbox/outbox.go
+- scripts/verify-audit-outbox.ps1
+- docs/decisions/0010-audit-outbox-mutations.md
+
+Updated:
+
+- internal/modules/inventory/store.go
+- cmd/erp-api/main.go
+- scripts/seed-dev-rbac.ps1
+- README.md
+- docs/NATIVE_LOCAL_DEV.md
+
+Behavior:
+
+- POST /api/v1/inventory/items now writes inventory.items, audit.audit_log, and core.outbox_events in one tenant-scoped transaction.
+- Inventory item creation emits durable outbox event inventory.item.created.v1.
+- Inventory item creation writes audit action inventory.item.create.
+- seed-dev-rbac.ps1 now displays seeded users/roles correctly under RLS.
+
+Reason:
+
+- ERP mutations must be accountable and event-capable from the beginning.
+- Business row, audit row, and outbox event must commit together.
+
+Current next step:
+
+- Run verify-audit-outbox.ps1.
+- Re-run verify-rbac.ps1.
+- Commit after verification succeeds.
+
+## 2026-07-01
+
+### Fixed audit/outbox verification under RLS
+
+Updated:
+
+- scripts/verify-audit-outbox.ps1
+
+Reason:
+
+- audit.audit_log is protected by RLS.
+- The verification query must set app.tenant_id in the same database session before counting audit rows.
+- The mutation path was working, but the verification query was not RLS-aware enough.
+
+Current next step:
+
+- Commit audit/outbox mutation support after verify-audit-outbox.ps1 and verify-rbac.ps1 pass.

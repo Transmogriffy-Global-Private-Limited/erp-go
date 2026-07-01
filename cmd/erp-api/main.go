@@ -186,7 +186,9 @@ func (a *app) createInventoryItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	item, err := a.inventory.CreateItem(r.Context(), tenantID, input)
+	userID, _ := auth.UserIDFromContext(r.Context())
+
+	item, err := a.inventory.CreateItem(r.Context(), tenantID, userID, input)
 	if err != nil {
 		httpx.Error(w, http.StatusInternalServerError, "inventory_item_create_failed", "failed to create inventory item")
 		return

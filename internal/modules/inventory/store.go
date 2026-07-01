@@ -6,7 +6,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/audit"
 	platformdb "github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/db"
+	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/outbox"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -82,7 +84,7 @@ ORDER BY created_at DESC, id DESC
 	return items, nil
 }
 
-func (s Store) CreateItem(ctx context.Context, tenantID string, input CreateItemInput) (Item, error) {
+func (s Store) CreateItem(ctx context.Context, tenantID string, actorID string, input CreateItemInput) (Item, error) {
 	input.SKU = strings.TrimSpace(input.SKU)
 	input.Name = strings.TrimSpace(input.Name)
 	input.Description = strings.TrimSpace(input.Description)
@@ -101,17 +103,21 @@ tenant_id,
 sku,
 name,
 description,
-status
+status,
+created_by,
+updated_by
 )
 VALUES (
 $1,
 $2,
 $3,
 $4,
-$5
+$5,
+$6::uuid,
+$6::uuid
 )
 RETURNING id::text, sku, name, description, status, created_at, updated_at
-`, tenantID, input.SKU, input.Name, input.Description, input.Status).Scan(
+`, tenantID, input.SKU, input.Name, input.Description, input.Status, actorID).Scan(
 			&item.ID,
 			&item.SKU,
 			&item.Name,
@@ -122,6 +128,38 @@ RETURNING id::text, sku, name, description, status, created_at, updated_at
 		)
 		if err != nil {
 			return fmt.Errorf("insert inventory item: %w", err)
+		}
+
+		if err := audit.Insert(ctx, tx, audit.Entry{
+			TenantID:   tenantID,
+			ActorType:  "tenant_user",
+			ActorID:    actorID,
+			Action:     "inventory.item.create",
+			TargetType: "inventory.item",
+			TargetID:   item.ID,
+			Metadata: map[string]any{
+				"sku":    item.SKU,
+				"name":   item.Name,
+				"status": item.Status,
+			},
+		}); err != nil {
+			return err
+		}
+
+		if err := outbox.Insert(ctx, tx, outbox.Event{
+			TenantID:      tenantID,
+			EventType:     "inventory.item.created.v1",
+			EventVersion:  1,
+			AggregateType: "inventory.item",
+			AggregateID:   item.ID,
+			Payload: map[string]any{
+				"item_id": item.ID,
+				"sku":     item.SKU,
+				"name":    item.Name,
+				"status":  item.Status,
+			},
+		}); err != nil {
+			return err
 		}
 
 		return nil

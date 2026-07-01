@@ -643,3 +643,45 @@ New ADR:
 Next recommended step:
 
 - Verify RBAC, tenant isolation, and module entitlement scripts all pass.
+
+## 2026-07-01 update
+
+Audit and outbox writes were added to Inventory item creation.
+
+New platform helpers:
+
+- internal/platform/audit.Insert
+- internal/platform/outbox.Insert
+
+New verification script:
+
+- scripts/verify-audit-outbox.ps1
+
+New ADR:
+
+- docs/decisions/0010-audit-outbox-mutations.md
+
+Updated behavior:
+
+- POST /api/v1/inventory/items writes inventory item, audit log, and outbox event in the same transaction.
+
+Next recommended step:
+
+- Verify audit/outbox and RBAC scripts.
+
+## 2026-07-01 update
+
+Audit/outbox verification script was fixed for RLS.
+
+Problem:
+
+- verify-audit-outbox.ps1 saw 0 audit rows because the audit count query did not preserve app.tenant_id for the RLS-protected audit.audit_log read.
+
+Fix:
+
+- The script now sets app.tenant_id in the same psql session before counting audit rows.
+
+Next recommended step:
+
+- Re-run audit/outbox and RBAC verification.
+- Commit the audit/outbox mutation work.

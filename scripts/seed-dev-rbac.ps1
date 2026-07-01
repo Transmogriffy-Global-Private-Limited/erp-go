@@ -98,8 +98,6 @@ VALUES
     ('$TenantID', '$NoAccessUserID', '$NoAccessRoleID')
 ON CONFLICT (tenant_id, user_id, role_id) DO NOTHING;
 
-COMMIT;
-
 SELECT
     tu.tenant_id,
     tu.id AS user_id,
@@ -116,6 +114,8 @@ WHERE tu.tenant_id = '$TenantID'
   AND tu.id IN ('$AllowedUserID', '$NoAccessUserID')
 GROUP BY tu.tenant_id, tu.id, tu.email
 ORDER BY tu.email;
+
+COMMIT;
 "@
 
 psql $env:MIGRATION_DATABASE_URL -v ON_ERROR_STOP=1 -c $Sql

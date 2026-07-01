@@ -50,18 +50,6 @@ Check DB connectivity:
 
 .\scripts\db-check.ps1
 
-Apply migration:
-
-.\scripts\apply-migration.ps1 -Name 000002_runtime_role_grants -Direction up
-
-Rollback migration:
-
-.\scripts\apply-migration.ps1 -Name 000002_runtime_role_grants -Direction down
-
-Mark an already-applied migration in the local migration ledger:
-
-.\scripts\mark-migration-applied.ps1 -Name 000001_platform_foundation
-
 Seed the default local dev tenant:
 
 .\scripts\seed-dev-tenant.ps1
@@ -81,6 +69,10 @@ Verify module entitlement enforcement through control-plane and ERP APIs:
 Verify RBAC permission enforcement:
 
 .\scripts\verify-rbac.ps1
+
+Verify audit/outbox writes:
+
+.\scripts\verify-audit-outbox.ps1
 
 Run control plane API:
 
@@ -109,6 +101,18 @@ Default allowed dev user:
 Default no-access dev user:
 
 22222222-2222-2222-2222-222222222222
+
+## Mutation verification
+
+Inventory item creation should create:
+
+- inventory.items row
+- audit.audit_log row
+- core.outbox_events row
+
+Use:
+
+.\scripts\verify-audit-outbox.ps1
 
 ## Migration ledger
 
