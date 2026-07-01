@@ -845,3 +845,25 @@ Next recommended step:
 - Apply migration 000003.
 - Verify control-plane audit.
 - Run full verification.
+
+## 2026-07-01 update
+
+Control-plane API was refactored into a dedicated internal package.
+
+New package:
+
+- internal/platform/controlapi
+
+Main boot file:
+
+- cmd/control-plane-api/main.go
+
+New ADR:
+
+- docs/decisions/0015-split-control-plane-api-package.md
+
+No behavior change intended.
+
+Next recommended step:
+
+- Run full verification and commit.

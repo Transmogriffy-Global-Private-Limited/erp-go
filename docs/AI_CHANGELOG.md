@@ -839,3 +839,37 @@ Current next step:
 - Run verify-control-plane-audit.ps1.
 - Run verify-all.ps1.
 - Commit after success.
+
+## 2026-07-01
+
+### Refactored control-plane API into internal package
+
+Added:
+
+- internal/platform/controlapi/server.go
+- internal/platform/controlapi/auth.go
+- internal/platform/controlapi/tenants.go
+- internal/platform/controlapi/modules.go
+- internal/platform/controlapi/plans.go
+- docs/decisions/0015-split-control-plane-api-package.md
+
+Updated:
+
+- cmd/control-plane-api/main.go
+
+Behavior:
+
+- No intended behavior change.
+- cmd/control-plane-api/main.go is now process boot only.
+- Control-plane routes, handlers, and auth middleware live under internal/platform/controlapi.
+
+Reason:
+
+- The control-plane main file had become too large.
+- The next control-plane features should not keep expanding a monolithic main.go.
+
+Current next step:
+
+- Restart control-plane-api.
+- Run verify-all.ps1.
+- Commit if verification passes.
