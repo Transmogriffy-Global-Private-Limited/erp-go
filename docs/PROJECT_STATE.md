@@ -223,3 +223,37 @@ Current verification target:
 Next recommended step:
 
 - Add platform package directories and module manifests.
+
+## 2026-07-01 update
+
+Platform package map and initial module manifests were added.
+
+New platform packages:
+
+- internal/platform/auth
+- internal/platform/rbac
+- internal/platform/licensing
+- internal/platform/modules
+- internal/platform/events
+- internal/platform/outbox
+- internal/platform/files
+- internal/platform/audit
+- internal/platform/workflow
+
+New business module packages:
+
+- internal/modules/inventory
+- internal/modules/sales
+- internal/modules/purchase
+- internal/modules/accounting
+
+New manifests:
+
+- manifests/inventory.module.yaml
+- manifests/sales.module.yaml
+- manifests/purchase.module.yaml
+- manifests/accounting.module.yaml
+
+Next recommended step:
+
+- Add base database migrations for control/core/outbox and tenant isolation foundations.

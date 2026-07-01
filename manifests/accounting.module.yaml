@@ -1,0 +1,58 @@
+module_id: accounting
+name: Accounting
+version: 0.1.0
+status: planned
+
+depends_on:
+  - core
+  - documents
+  - audit
+  - workflow
+
+permissions:
+  - accounting.ledger.read
+  - accounting.ledger.write
+  - accounting.journal.read
+  - accounting.journal.post
+  - accounting.voucher.read
+  - accounting.report.read
+
+api:
+  routes:
+    - method: GET
+      path: /api/v1/accounting/ledgers
+      permission: accounting.ledger.read
+
+    - method: POST
+      path: /api/v1/accounting/journals
+      permission: accounting.journal.post
+
+database:
+  schema: accounting
+  owns_tables:
+    - accounting.ledger_accounts
+    - accounting.journal_entries
+    - accounting.journal_lines
+    - accounting.vouchers
+
+events:
+  publishes:
+    - accounting.ledger.created.v1
+    - accounting.journal.posted.v1
+    - accounting.voucher.created.v1
+
+  subscribes:
+    - sales.invoice.created.v1
+    - sales.invoice.cancelled.v1
+    - purchase.grn.posted.v1
+
+files:
+  attachment_types:
+    - voucher_attachment
+    - ledger_document
+
+reports:
+  - trial_balance
+  - profit_and_loss
+  - balance_sheet
+  - general_ledger

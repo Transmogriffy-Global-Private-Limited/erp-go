@@ -1,0 +1,57 @@
+module_id: inventory
+name: Inventory
+version: 0.1.0
+status: planned
+
+depends_on:
+  - core
+  - documents
+  - audit
+  - workflow
+
+permissions:
+  - inventory.item.read
+  - inventory.item.write
+  - inventory.stock.read
+  - inventory.stock.adjust
+  - inventory.stock.transfer
+  - inventory.stock.count
+
+api:
+  routes:
+    - method: GET
+      path: /api/v1/inventory/items
+      permission: inventory.item.read
+
+    - method: POST
+      path: /api/v1/inventory/items
+      permission: inventory.item.write
+
+database:
+  schema: inventory
+  owns_tables:
+    - inventory.items
+    - inventory.warehouses
+    - inventory.stock_movements
+    - inventory.stock_balances
+
+events:
+  publishes:
+    - inventory.item.created.v1
+    - inventory.stock.changed.v1
+    - inventory.stock.reserved.v1
+    - inventory.stock.released.v1
+
+  subscribes:
+    - sales.order.confirmed.v1
+    - sales.order.cancelled.v1
+    - purchase.grn.posted.v1
+
+files:
+  attachment_types:
+    - item_image
+    - stock_count_evidence
+
+reports:
+  - stock_ledger
+  - stock_valuation

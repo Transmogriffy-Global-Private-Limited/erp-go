@@ -1,0 +1,61 @@
+module_id: purchase
+name: Purchase
+version: 0.1.0
+status: planned
+
+depends_on:
+  - core
+  - documents
+  - audit
+  - workflow
+  - inventory
+  - accounting
+
+permissions:
+  - purchase.supplier.read
+  - purchase.supplier.write
+  - purchase.order.read
+  - purchase.order.create
+  - purchase.order.approve
+  - purchase.grn.read
+  - purchase.grn.create
+
+api:
+  routes:
+    - method: GET
+      path: /api/v1/purchase/orders
+      permission: purchase.order.read
+
+    - method: POST
+      path: /api/v1/purchase/orders
+      permission: purchase.order.create
+
+database:
+  schema: purchase
+  owns_tables:
+    - purchase.suppliers
+    - purchase.purchase_orders
+    - purchase.purchase_order_items
+    - purchase.grns
+
+events:
+  publishes:
+    - purchase.supplier.created.v1
+    - purchase.order.created.v1
+    - purchase.order.approved.v1
+    - purchase.grn.posted.v1
+
+  subscribes:
+    - accounting.journal.posted.v1
+    - inventory.stock.changed.v1
+
+files:
+  attachment_types:
+    - supplier_document
+    - purchase_order_attachment
+    - supplier_invoice
+
+reports:
+  - purchase_register
+  - pending_purchase_orders
+  - supplier_outstanding

@@ -61,3 +61,48 @@ Verification:
 Current next step:
 
 - Add platform directory structure for auth, RBAC, licensing, modules, events, outbox, files, audit, and workflow.
+
+## 2026-07-01
+
+### Added platform package map and initial module manifests
+
+Added package documentation files for platform concerns:
+
+- auth
+- rbac
+- licensing
+- modules
+- events
+- outbox
+- files
+- audit
+- workflow
+
+Added package documentation files for initial business modules:
+
+- inventory
+- sales
+- purchase
+- accounting
+
+Added initial module manifests for:
+
+- inventory
+- sales
+- purchase
+- accounting
+
+Reason:
+
+- Make platform/module boundaries explicit before implementing business logic.
+- Give future AI/dev agents stable package intent.
+- Establish manifest-driven module contracts early.
+
+Verification:
+
+- Run gofmt.
+- Run go test ./...
+
+Current next step:
+
+- Add base database migrations for control/core/outbox and tenant isolation foundations.
