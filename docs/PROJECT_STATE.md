@@ -613,3 +613,33 @@ This proves:
 Current next recommended step:
 
 - Add tenant users, roles, permissions, and basic ERP permission enforcement.
+
+## 2026-07-01 update
+
+ERP-side RBAC permission enforcement was added.
+
+New temporary identity context:
+
+- X-User-ID
+
+New permission store:
+
+- internal/platform/rbac/store.go
+
+New scripts:
+
+- scripts/seed-dev-rbac.ps1
+- scripts/verify-rbac.ps1
+
+Updated verification scripts:
+
+- scripts/verify-tenant-isolation.ps1
+- scripts/verify-module-entitlement.ps1
+
+New ADR:
+
+- docs/decisions/0009-erp-permission-enforcement.md
+
+Next recommended step:
+
+- Verify RBAC, tenant isolation, and module entitlement scripts all pass.

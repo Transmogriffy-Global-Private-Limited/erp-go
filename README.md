@@ -10,6 +10,7 @@ This repository currently contains the first bootable backend spine:
 - erp-api
 - shared HTTP response helpers
 - tenant context helper
+- temporary user context helper
 - shared PostgreSQL runtime connection helper
 - tenant-scoped DB transaction helper
 - native PowerShell migration workflow
@@ -17,8 +18,11 @@ This repository currently contains the first bootable backend spine:
 - DB-backed control-plane tenant APIs
 - control-plane tenant module entitlement APIs
 - ERP-side module entitlement enforcement
+- ERP-side RBAC permission enforcement
 - first tenant-owned Inventory items API
 - tenant-isolation verification script
+- module-entitlement verification script
+- RBAC verification script
 
 ## Control Plane
 
@@ -55,11 +59,19 @@ The ERP plane manages tenant business runtime:
 - purchase
 - accounting
 
-Module-specific ERP APIs must be entitlement-guarded.
+Module-specific ERP APIs must be entitlement-guarded and permission-guarded.
 
-Example:
+Current Inventory permission rules:
 
-- GET /api/v1/inventory/items requires inventory to be enabled.
+- GET /api/v1/inventory/items requires inventory.item.read
+- POST /api/v1/inventory/items requires inventory.item.write
+
+Temporary local identity:
+
+- X-Tenant-ID
+- X-User-ID
+
+X-User-ID is a placeholder until real authentication is introduced.
 
 ## Local database
 
@@ -81,6 +93,10 @@ Seed local dev tenant:
 
 .\scripts\seed-dev-tenant.ps1
 
+Seed local dev RBAC:
+
+.\scripts\seed-dev-rbac.ps1
+
 Verify tenant isolation:
 
 .\scripts\verify-tenant-isolation.ps1
@@ -88,6 +104,10 @@ Verify tenant isolation:
 Verify module entitlement enforcement:
 
 .\scripts\verify-module-entitlement.ps1
+
+Verify RBAC permission enforcement:
+
+.\scripts\verify-rbac.ps1
 
 ## Run locally
 
@@ -111,19 +131,14 @@ Module endpoints:
 Invoke-RestMethod http://localhost:8081/control/v1/modules
 Invoke-RestMethod http://localhost:8080/api/v1/modules -Headers @{ "X-Tenant-ID" = "00000000-0000-0000-0000-000000000001" }
 
-Tenant module entitlement endpoints:
-
-$tenantID = "00000000-0000-0000-0000-000000000001"
-
-Invoke-RestMethod "http://localhost:8081/control/v1/tenants/$tenantID/modules"
-
-Invoke-RestMethod "http://localhost:8081/control/v1/tenants/$tenantID/modules/inventory/disable" -Method Post
-
-Invoke-RestMethod "http://localhost:8081/control/v1/tenants/$tenantID/modules/inventory/enable" -Method Post
-
 Inventory items:
 
-Invoke-RestMethod http://localhost:8080/api/v1/inventory/items -Headers @{ "X-Tenant-ID" = "00000000-0000-0000-0000-000000000001" }
+$headers = @{
+  "X-Tenant-ID" = "00000000-0000-0000-0000-000000000001"
+  "X-User-ID" = "11111111-1111-1111-1111-111111111111"
+}
+
+Invoke-RestMethod http://localhost:8080/api/v1/inventory/items -Headers $headers
 
 ## Project memory
 

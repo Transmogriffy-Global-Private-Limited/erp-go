@@ -2,6 +2,11 @@ param(
   [string] $BaseUrl = "http://localhost:8080",
   [string] $TenantA = "00000000-0000-0000-0000-000000000001",
   [string] $TenantB = "00000000-0000-0000-0000-000000000002",
+  [string] $TenantAUserID = "11111111-1111-1111-1111-111111111111",
+  [string] $TenantBUserID = "55555555-5555-5555-5555-555555555555",
+  [string] $TenantBNoAccessUserID = "66666666-6666-6666-6666-666666666666",
+  [string] $TenantBRoleID = "77777777-7777-7777-7777-777777777777",
+  [string] $TenantBNoAccessRoleID = "88888888-8888-8888-8888-888888888888",
   [string] $EnvFile = ".env"
 )
 
@@ -18,9 +23,12 @@ Write-Host "Seeding tenant A..."
   -DisplayName "Dev Tenant A" `
   -EnvFile $EnvFile
 
-if ($LASTEXITCODE -ne 0) {
-  throw "Failed to seed tenant A."
-}
+Write-Host ""
+Write-Host "Seeding tenant A RBAC..."
+& (Join-Path $PSScriptRoot "seed-dev-rbac.ps1") `
+  -TenantID $TenantA `
+  -AllowedUserID $TenantAUserID `
+  -EnvFile $EnvFile
 
 Write-Host ""
 Write-Host "Seeding tenant B..."
@@ -31,9 +39,15 @@ Write-Host "Seeding tenant B..."
   -DisplayName "Dev Tenant B" `
   -EnvFile $EnvFile
 
-if ($LASTEXITCODE -ne 0) {
-  throw "Failed to seed tenant B."
-}
+Write-Host ""
+Write-Host "Seeding tenant B RBAC..."
+& (Join-Path $PSScriptRoot "seed-dev-rbac.ps1") `
+  -TenantID $TenantB `
+  -AllowedUserID $TenantBUserID `
+  -NoAccessUserID $TenantBNoAccessUserID `
+  -AllowedRoleID $TenantBRoleID `
+  -NoAccessRoleID $TenantBNoAccessRoleID `
+  -EnvFile $EnvFile
 
 $Sku = "RLS-" + (Get-Date -Format "yyyyMMddHHmmss") + "-" + (Get-Random -Minimum 1000 -Maximum 9999)
 
@@ -45,10 +59,12 @@ $Body = @{
 
 $TenantAHeaders = @{
   "X-Tenant-ID" = $TenantA
+  "X-User-ID" = $TenantAUserID
 }
 
 $TenantBHeaders = @{
   "X-Tenant-ID" = $TenantB
+  "X-User-ID" = $TenantBUserID
 }
 
 Write-Host ""

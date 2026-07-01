@@ -1,15 +1,29 @@
 param(
   [string] $BaseUrl = "http://localhost:8080",
   [string] $ControlPlaneUrl = "http://localhost:8081",
-  [string] $TenantID = "00000000-0000-0000-0000-000000000001"
+  [string] $TenantID = "00000000-0000-0000-0000-000000000001",
+  [string] $UserID = "11111111-1111-1111-1111-111111111111",
+  [string] $EnvFile = ".env"
 )
 
 $ErrorActionPreference = "Stop"
 
+$RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
+Set-Location $RepoRoot
+
+Write-Host "Seeding tenant..."
+& (Join-Path $PSScriptRoot "seed-dev-tenant.ps1") -TenantID $TenantID -EnvFile $EnvFile
+
+Write-Host ""
+Write-Host "Seeding RBAC..."
+& (Join-Path $PSScriptRoot "seed-dev-rbac.ps1") -TenantID $TenantID -AllowedUserID $UserID -EnvFile $EnvFile
+
 $Headers = @{
   "X-Tenant-ID" = $TenantID
+  "X-User-ID" = $UserID
 }
 
+Write-Host ""
 Write-Host "Ensuring inventory is enabled first..."
 Invoke-RestMethod "$ControlPlaneUrl/control/v1/tenants/$TenantID/modules/inventory/enable" -Method Post | Out-Null
 

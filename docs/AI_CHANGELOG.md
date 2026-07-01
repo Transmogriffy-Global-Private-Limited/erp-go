@@ -553,3 +553,42 @@ Result:
 Current next step:
 
 - Add tenant user/RBAC foundation and protect Inventory item APIs with permissions.
+
+## 2026-07-01
+
+### Added ERP-side RBAC permission enforcement
+
+Added:
+
+- internal/platform/auth/context.go
+- internal/platform/rbac/store.go
+- scripts/seed-dev-rbac.ps1
+- scripts/verify-rbac.ps1
+- docs/decisions/0009-erp-permission-enforcement.md
+
+Updated:
+
+- cmd/erp-api/main.go
+- scripts/verify-tenant-isolation.ps1
+- scripts/verify-module-entitlement.ps1
+- README.md
+- docs/NATIVE_LOCAL_DEV.md
+
+Behavior:
+
+- Inventory item APIs now require X-User-ID.
+- GET /api/v1/inventory/items requires inventory.item.read.
+- POST /api/v1/inventory/items requires inventory.item.write.
+- RBAC checks run through tenant-scoped DB transactions.
+- Existing verification scripts now seed/use RBAC identity.
+
+Reason:
+
+- Tenant/module access is not sufficient for ERP security.
+- Module-specific ERP APIs need user-level permission enforcement.
+
+Current next step:
+
+- Run verify-rbac.ps1.
+- Re-run verify-tenant-isolation.ps1 and verify-module-entitlement.ps1.
+- Commit after all verification passes.

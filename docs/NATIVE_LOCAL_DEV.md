@@ -35,6 +35,15 @@ erp_owner owns the local database and applies migrations.
 
 erp_app is the application runtime role.
 
+## Temporary local identity
+
+ERP APIs currently use temporary headers:
+
+- X-Tenant-ID
+- X-User-ID
+
+X-User-ID is only a placeholder until real authentication is introduced.
+
 ## Scripts
 
 Check DB connectivity:
@@ -57,6 +66,10 @@ Seed the default local dev tenant:
 
 .\scripts\seed-dev-tenant.ps1
 
+Seed local dev RBAC users/roles:
+
+.\scripts\seed-dev-rbac.ps1
+
 Verify tenant isolation through the ERP API:
 
 .\scripts\verify-tenant-isolation.ps1
@@ -64,6 +77,10 @@ Verify tenant isolation through the ERP API:
 Verify module entitlement enforcement through control-plane and ERP APIs:
 
 .\scripts\verify-module-entitlement.ps1
+
+Verify RBAC permission enforcement:
+
+.\scripts\verify-rbac.ps1
 
 Run control plane API:
 
@@ -83,7 +100,15 @@ Second local dev tenant used for isolation checks:
 
 00000000-0000-0000-0000-000000000002
 
-The seed script enables all currently registered modules for each seeded tenant.
+## Dev users
+
+Default allowed dev user:
+
+11111111-1111-1111-1111-111111111111
+
+Default no-access dev user:
+
+22222222-2222-2222-2222-222222222222
 
 ## Migration ledger
 

@@ -12,9 +12,11 @@ import (
 	"time"
 
 	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/modules/inventory"
+	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/auth"
 	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/db"
 	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/httpx"
 	platformmodules "github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/modules"
+	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/rbac"
 	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/tenancy"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -22,6 +24,7 @@ import (
 type app struct {
 	db        *pgxpool.Pool
 	modules   platformmodules.Store
+	rbac      rbac.Store
 	inventory inventory.Store
 }
 
@@ -41,6 +44,7 @@ func main() {
 	app := &app{
 		db:        pool,
 		modules:   platformmodules.NewStore(pool),
+		rbac:      rbac.NewStore(pool),
 		inventory: inventory.NewStore(pool),
 	}
 
@@ -48,7 +52,10 @@ func main() {
 	mux.HandleFunc("/healthz", app.healthHandler)
 	mux.HandleFunc("/healthz/db", app.dbHealthHandler)
 	mux.Handle("/api/v1/modules", tenantMiddleware(http.HandlerFunc(app.enabledModulesHandler)))
-	mux.Handle("/api/v1/inventory/items", tenantMiddleware(app.requireModule("inventory", http.HandlerFunc(app.inventoryItemsHandler))))
+	mux.Handle(
+		"/api/v1/inventory/items",
+		tenantMiddleware(userMiddleware(app.requireModule("inventory", http.HandlerFunc(app.inventoryItemsHandler)))),
+	)
 
 	server := &http.Server{
 		Addr:              addr,
@@ -119,9 +126,15 @@ func (a *app) enabledModulesHandler(w http.ResponseWriter, r *http.Request) {
 func (a *app) inventoryItemsHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
+		if !a.requirePermission(w, r, "inventory.item.read") {
+			return
+		}
 		a.listInventoryItems(w, r)
 
 	case http.MethodPost:
+		if !a.requirePermission(w, r, "inventory.item.write") {
+			return
+		}
 		a.createInventoryItem(w, r)
 
 	default:
@@ -208,6 +221,33 @@ func (a *app) requireModule(moduleID string, next http.Handler) http.Handler {
 	})
 }
 
+func (a *app) requirePermission(w http.ResponseWriter, r *http.Request, permissionID string) bool {
+	tenantID, ok := tenancy.TenantIDFromContext(r.Context())
+	if !ok {
+		httpx.Error(w, http.StatusBadRequest, "tenant_required", "tenant context is required")
+		return false
+	}
+
+	userID, ok := auth.UserIDFromContext(r.Context())
+	if !ok {
+		httpx.Error(w, http.StatusUnauthorized, "user_required", "user context is required")
+		return false
+	}
+
+	allowed, err := a.rbac.HasPermission(r.Context(), tenantID, userID, permissionID)
+	if err != nil {
+		httpx.Error(w, http.StatusInternalServerError, "permission_check_failed", "failed to check permission")
+		return false
+	}
+
+	if !allowed {
+		httpx.Error(w, http.StatusForbidden, "permission_denied", "permission denied")
+		return false
+	}
+
+	return true
+}
+
 func tenantMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tenantID := r.Header.Get("X-Tenant-ID")
@@ -217,6 +257,19 @@ func tenantMiddleware(next http.Handler) http.Handler {
 		}
 
 		ctx := tenancy.WithTenantID(r.Context(), tenantID)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func userMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userID := r.Header.Get("X-User-ID")
+		if userID == "" {
+			httpx.Error(w, http.StatusUnauthorized, "user_required", "X-User-ID header is required")
+			return
+		}
+
+		ctx := auth.WithUserID(r.Context(), userID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
