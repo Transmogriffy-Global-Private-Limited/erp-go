@@ -647,3 +647,39 @@ Reason:
 Current next step:
 
 - Commit audit/outbox mutation support after verify-audit-outbox.ps1 and verify-rbac.ps1 pass.
+
+## 2026-07-01
+
+### Added DB-backed outbox worker v1
+
+Added:
+
+- cmd/erp-worker/main.go
+- scripts/run-erp-worker.ps1
+- scripts/verify-outbox-worker.ps1
+- docs/decisions/0011-db-backed-outbox-worker-first.md
+
+Updated:
+
+- internal/platform/outbox/outbox.go
+- README.md
+- docs/NATIVE_LOCAL_DEV.md
+
+Behavior:
+
+- erp-worker claims pending/failed outbox events.
+- Claimed events are marked publishing.
+- Worker logs the event payload.
+- Worker marks processed events published.
+- verify-outbox-worker.ps1 creates an inventory item, confirms pending outbox row, runs the worker once, and confirms the row becomes published.
+
+Reason:
+
+- Durable event processing should work before introducing any external event bus.
+- The project has a no-container local development constraint, so DB-backed worker is the right first event-processing step.
+
+Current next step:
+
+- Run verify-outbox-worker.ps1.
+- Re-run verify-audit-outbox.ps1 and verify-rbac.ps1.
+- Commit after verification succeeds.

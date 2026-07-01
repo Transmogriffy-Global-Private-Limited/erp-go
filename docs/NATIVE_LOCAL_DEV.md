@@ -22,7 +22,7 @@ MIGRATION_DATABASE_URL is used by local migration scripts.
 
 CONTROL_PLANE_DATABASE_URL is used by control-plane-api.
 
-ERP_DATABASE_URL is used by erp-api.
+ERP_DATABASE_URL is used by erp-api and erp-worker.
 
 ## Database roles
 
@@ -74,6 +74,10 @@ Verify audit/outbox writes:
 
 .\scripts\verify-audit-outbox.ps1
 
+Verify outbox worker:
+
+.\scripts\verify-outbox-worker.ps1
+
 Run control plane API:
 
 .\scripts\run-control-plane-api.ps1
@@ -81,6 +85,14 @@ Run control plane API:
 Run ERP API:
 
 .\scripts\run-erp-api.ps1
+
+Run ERP worker once:
+
+.\scripts\run-erp-worker.ps1 -Once -Limit 100
+
+Run ERP worker continuously:
+
+.\scripts\run-erp-worker.ps1
 
 ## Dev tenants
 
@@ -113,6 +125,14 @@ Inventory item creation should create:
 Use:
 
 .\scripts\verify-audit-outbox.ps1
+
+## Worker verification
+
+The DB-backed worker should claim pending outbox rows and mark them published.
+
+Use:
+
+.\scripts\verify-outbox-worker.ps1
 
 ## Migration ledger
 

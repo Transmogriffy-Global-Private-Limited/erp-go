@@ -685,3 +685,35 @@ Next recommended step:
 
 - Re-run audit/outbox and RBAC verification.
 - Commit the audit/outbox mutation work.
+
+## 2026-07-01 update
+
+DB-backed outbox worker v1 was added.
+
+New executable:
+
+- cmd/erp-worker
+
+New scripts:
+
+- scripts/run-erp-worker.ps1
+- scripts/verify-outbox-worker.ps1
+
+New ADR:
+
+- docs/decisions/0011-db-backed-outbox-worker-first.md
+
+Updated outbox package:
+
+- internal/platform/outbox/outbox.go
+
+Current behavior:
+
+- Worker claims pending/failed outbox events.
+- Worker logs event payloads.
+- Worker marks events published.
+
+Next recommended step:
+
+- Verify outbox worker.
+- Re-run audit/outbox and RBAC checks.

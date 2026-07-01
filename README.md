@@ -8,6 +8,7 @@ This repository currently contains the first bootable backend spine:
 
 - control-plane-api
 - erp-api
+- erp-worker
 - shared HTTP response helpers
 - tenant context helper
 - temporary user context helper
@@ -21,10 +22,12 @@ This repository currently contains the first bootable backend spine:
 - ERP-side RBAC permission enforcement
 - first tenant-owned Inventory items API
 - audit and outbox writes on Inventory item creation
+- DB-backed outbox worker v1
 - tenant-isolation verification script
 - module-entitlement verification script
 - RBAC verification script
 - audit/outbox verification script
+- outbox-worker verification script
 
 ## Control Plane
 
@@ -59,9 +62,11 @@ Mutation pattern:
 - outbox event
 - one transaction
 
-Current Inventory mutation:
+Worker pattern:
 
-- POST /api/v1/inventory/items writes inventory.items, audit.audit_log, and core.outbox_events.
+- claim outbox events
+- process event
+- mark published
 
 ## Local database
 
@@ -99,6 +104,10 @@ Verify audit/outbox mutation writes:
 
 .\scripts\verify-audit-outbox.ps1
 
+Verify outbox worker:
+
+.\scripts\verify-outbox-worker.ps1
+
 ## Run locally
 
 Control plane API:
@@ -108,6 +117,14 @@ Control plane API:
 ERP API:
 
 .\scripts\run-erp-api.ps1
+
+ERP worker once:
+
+.\scripts\run-erp-worker.ps1 -Once -Limit 100
+
+ERP worker continuous:
+
+.\scripts\run-erp-worker.ps1
 
 Inventory items require:
 
