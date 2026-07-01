@@ -75,6 +75,13 @@ Invoke-Step -Name "Plans/subscriptions verification" -Action {
     -EnvFile $EnvFile
 }
 
+Invoke-Step -Name "Control-plane audit verification" -Action {
+  & (Join-Path $PSScriptRoot "verify-control-plane-audit.ps1") `
+    -BaseUrl $BaseUrl `
+    -ControlPlaneUrl $ControlPlaneUrl `
+    -EnvFile $EnvFile
+}
+
 Invoke-Step -Name "RBAC verification" -Action {
   & (Join-Path $PSScriptRoot "verify-rbac.ps1") `
     -BaseUrl $BaseUrl `
@@ -111,3 +118,4 @@ Invoke-Step -Name "Outbox worker verification" -Action {
 
 Write-Host ""
 Write-Host "All verification checks passed."
+

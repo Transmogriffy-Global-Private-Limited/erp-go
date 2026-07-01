@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/audit"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -112,10 +113,19 @@ WHERE tem.tenant_id = $1
 }
 
 // EnableForTenant enables a module for a tenant and returns the module record.
-func (s Store) EnableForTenant(ctx context.Context, tenantID string, moduleID string) (Module, error) {
+func (s Store) EnableForTenant(ctx context.Context, platformActorID string, tenantID string, moduleID string) (Module, error) {
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return Module{}, fmt.Errorf("begin tenant module enable transaction: %w", err)
+	}
+
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
+
 	var module Module
 
-	err := s.db.QueryRow(ctx, `
+	err = tx.QueryRow(ctx, `
 WITH enabled AS (
 INSERT INTO control.tenant_enabled_modules (
 tenant_id,
@@ -142,14 +152,43 @@ INNER JOIN control.modules m ON m.id = e.module_id
 		return Module{}, fmt.Errorf("enable tenant module: %w", err)
 	}
 
+	if err := audit.InsertPlatform(ctx, tx, audit.PlatformEntry{
+		PlatformActorID: platformActorID,
+		Action:          "control.tenant_module.enable",
+		TargetType:      "control.tenant_module",
+		TargetID:        tenantID + ":" + moduleID,
+		TenantID:        tenantID,
+		Metadata: map[string]any{
+			"tenant_id": tenantID,
+			"module_id": module.ID,
+			"name":      module.Name,
+			"status":    module.Status,
+		},
+	}); err != nil {
+		return Module{}, err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return Module{}, fmt.Errorf("commit tenant module enable transaction: %w", err)
+	}
+
 	return module, nil
 }
 
 // DisableForTenant disables a module for a tenant and returns the module record.
-func (s Store) DisableForTenant(ctx context.Context, tenantID string, moduleID string) (Module, error) {
+func (s Store) DisableForTenant(ctx context.Context, platformActorID string, tenantID string, moduleID string) (Module, error) {
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return Module{}, fmt.Errorf("begin tenant module disable transaction: %w", err)
+	}
+
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
+
 	var module Module
 
-	err := s.db.QueryRow(ctx, `
+	err = tx.QueryRow(ctx, `
 WITH disabled AS (
 UPDATE control.tenant_enabled_modules
 SET disabled_at = now()
@@ -163,6 +202,26 @@ INNER JOIN control.modules m ON m.id = d.module_id
 `, tenantID, moduleID).Scan(&module.ID, &module.Name, &module.Status)
 	if err != nil {
 		return Module{}, fmt.Errorf("disable tenant module: %w", err)
+	}
+
+	if err := audit.InsertPlatform(ctx, tx, audit.PlatformEntry{
+		PlatformActorID: platformActorID,
+		Action:          "control.tenant_module.disable",
+		TargetType:      "control.tenant_module",
+		TargetID:        tenantID + ":" + moduleID,
+		TenantID:        tenantID,
+		Metadata: map[string]any{
+			"tenant_id": tenantID,
+			"module_id": module.ID,
+			"name":      module.Name,
+			"status":    module.Status,
+		},
+	}); err != nil {
+		return Module{}, err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return Module{}, fmt.Errorf("commit tenant module disable transaction: %w", err)
 	}
 
 	return module, nil

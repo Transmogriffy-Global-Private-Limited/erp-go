@@ -811,3 +811,37 @@ Next recommended step:
 
 - Verify plans/subscriptions.
 - Run full verification.
+
+## 2026-07-01 update
+
+Control-plane platform audit logging was added.
+
+New table:
+
+- control.platform_audit_log
+
+New migration:
+
+- 000003_control_plane_audit
+
+New platform audit helper:
+
+- internal/platform/audit.InsertPlatform
+
+New verification script:
+
+- scripts/verify-control-plane-audit.ps1
+
+Audited actions include:
+
+- tenant creation
+- tenant module enable/disable
+- plan creation
+- plan module enable
+- tenant subscription assignment
+
+Next recommended step:
+
+- Apply migration 000003.
+- Verify control-plane audit.
+- Run full verification.

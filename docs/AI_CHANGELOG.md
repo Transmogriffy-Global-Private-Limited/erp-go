@@ -796,3 +796,46 @@ Current next step:
 - Run verify-plans-subscriptions.ps1.
 - Run verify-all.ps1.
 - Commit after success.
+
+## 2026-07-01
+
+### Added control-plane platform audit logging
+
+Added:
+
+- migrations/000003_control_plane_audit.up.sql
+- migrations/000003_control_plane_audit.down.sql
+- internal/platform/auth/platform_context.go
+- internal/platform/audit/platform_audit.go
+- scripts/verify-control-plane-audit.ps1
+- docs/decisions/0014-control-plane-platform-audit-log.md
+
+Updated:
+
+- cmd/control-plane-api/main.go
+- internal/platform/tenancy/store.go
+- internal/platform/modules/store.go
+- internal/platform/licensing/store.go
+- scripts/verify-all.ps1
+
+Behavior:
+
+- control.platform_audit_log records platform/superadmin actions.
+- Tenant creation writes platform audit.
+- Tenant module enable/disable writes platform audit.
+- Plan creation writes platform audit.
+- Plan module enable writes platform audit.
+- Tenant subscription assignment writes platform audit.
+
+Reason:
+
+- Control-plane actions are platform-powerful and need accountability.
+- Platform audit should be separate from tenant ERP business audit.
+
+Current next step:
+
+- Apply migration 000003_control_plane_audit.
+- Restart control-plane-api.
+- Run verify-control-plane-audit.ps1.
+- Run verify-all.ps1.
+- Commit after success.

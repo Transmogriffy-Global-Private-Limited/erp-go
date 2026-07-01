@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/auth"
 	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/db"
 	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/httpx"
 	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/licensing"
@@ -105,10 +106,8 @@ func (a *app) tenantsHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		a.listTenants(w, r)
-
 	case http.MethodPost:
 		a.createTenant(w, r)
-
 	default:
 		httpx.MethodNotAllowed(w, http.MethodGet, http.MethodPost)
 	}
@@ -158,7 +157,9 @@ func (a *app) createTenant(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tenant, err := a.tenants.CreateTenant(r.Context(), input)
+	platformActorID, _ := auth.PlatformUserIDFromContext(r.Context())
+
+	tenant, err := a.tenants.CreateTenant(r.Context(), platformActorID, input)
 	if err != nil {
 		httpx.Error(w, http.StatusInternalServerError, "tenant_create_failed", "failed to create tenant")
 		return
@@ -267,7 +268,9 @@ func (a *app) listTenantModules(w http.ResponseWriter, r *http.Request, tenantID
 }
 
 func (a *app) enableTenantModule(w http.ResponseWriter, r *http.Request, tenantID string, moduleID string) {
-	module, err := a.modules.EnableForTenant(r.Context(), tenantID, moduleID)
+	platformActorID, _ := auth.PlatformUserIDFromContext(r.Context())
+
+	module, err := a.modules.EnableForTenant(r.Context(), platformActorID, tenantID, moduleID)
 	if err != nil {
 		httpx.Error(w, http.StatusInternalServerError, "tenant_module_enable_failed", "failed to enable tenant module")
 		return
@@ -281,7 +284,9 @@ func (a *app) enableTenantModule(w http.ResponseWriter, r *http.Request, tenantI
 }
 
 func (a *app) disableTenantModule(w http.ResponseWriter, r *http.Request, tenantID string, moduleID string) {
-	module, err := a.modules.DisableForTenant(r.Context(), tenantID, moduleID)
+	platformActorID, _ := auth.PlatformUserIDFromContext(r.Context())
+
+	module, err := a.modules.DisableForTenant(r.Context(), platformActorID, tenantID, moduleID)
 	if err != nil {
 		httpx.Error(w, http.StatusInternalServerError, "tenant_module_disable_failed", "failed to disable tenant module")
 		return
@@ -314,7 +319,9 @@ func (a *app) assignTenantSubscription(w http.ResponseWriter, r *http.Request, t
 		return
 	}
 
-	subscription, modules, err := a.licensing.AssignTenantSubscription(r.Context(), tenantID, input)
+	platformActorID, _ := auth.PlatformUserIDFromContext(r.Context())
+
+	subscription, modules, err := a.licensing.AssignTenantSubscription(r.Context(), platformActorID, tenantID, input)
 	if err != nil {
 		httpx.Error(w, http.StatusInternalServerError, "tenant_subscription_assign_failed", "failed to assign tenant subscription")
 		return
@@ -348,10 +355,8 @@ func (a *app) plansHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		a.listPlans(w, r)
-
 	case http.MethodPost:
 		a.createPlan(w, r)
-
 	default:
 		httpx.MethodNotAllowed(w, http.MethodGet, http.MethodPost)
 	}
@@ -395,7 +400,9 @@ func (a *app) createPlan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	plan, err := a.licensing.CreatePlan(r.Context(), input)
+	platformActorID, _ := auth.PlatformUserIDFromContext(r.Context())
+
+	plan, err := a.licensing.CreatePlan(r.Context(), platformActorID, input)
 	if err != nil {
 		httpx.Error(w, http.StatusInternalServerError, "plan_create_failed", "failed to create plan")
 		return
@@ -470,7 +477,9 @@ func (a *app) listPlanModules(w http.ResponseWriter, r *http.Request, planID str
 }
 
 func (a *app) enablePlanModule(w http.ResponseWriter, r *http.Request, planID string, moduleID string) {
-	module, err := a.licensing.EnablePlanModule(r.Context(), planID, moduleID)
+	platformActorID, _ := auth.PlatformUserIDFromContext(r.Context())
+
+	module, err := a.licensing.EnablePlanModule(r.Context(), platformActorID, planID, moduleID)
 	if err != nil {
 		httpx.Error(w, http.StatusInternalServerError, "plan_module_enable_failed", "failed to enable plan module")
 		return
@@ -498,7 +507,8 @@ func platformAuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		next.ServeHTTP(w, r)
+		ctx := auth.WithPlatformUserID(r.Context(), platformUserID)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 

@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/audit"
 	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/modules"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -78,7 +79,7 @@ ORDER BY id
 	return plans, nil
 }
 
-func (s Store) CreatePlan(ctx context.Context, input CreatePlanInput) (Plan, error) {
+func (s Store) CreatePlan(ctx context.Context, platformActorID string, input CreatePlanInput) (Plan, error) {
 	input.ID = strings.TrimSpace(input.ID)
 	input.Name = strings.TrimSpace(input.Name)
 	input.Status = strings.TrimSpace(input.Status)
@@ -87,9 +88,18 @@ func (s Store) CreatePlan(ctx context.Context, input CreatePlanInput) (Plan, err
 		input.Status = "draft"
 	}
 
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return Plan{}, fmt.Errorf("begin plan create transaction: %w", err)
+	}
+
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
+
 	var plan Plan
 
-	err := s.db.QueryRow(ctx, `
+	err = tx.QueryRow(ctx, `
 INSERT INTO control.plans (
 id,
 name,
@@ -109,6 +119,23 @@ RETURNING id, name, status, created_at
 	)
 	if err != nil {
 		return Plan{}, fmt.Errorf("insert plan: %w", err)
+	}
+
+	if err := audit.InsertPlatform(ctx, tx, audit.PlatformEntry{
+		PlatformActorID: platformActorID,
+		Action:          "control.plan.create",
+		TargetType:      "control.plan",
+		TargetID:        plan.ID,
+		Metadata: map[string]any{
+			"name":   plan.Name,
+			"status": plan.Status,
+		},
+	}); err != nil {
+		return Plan{}, err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return Plan{}, fmt.Errorf("commit plan create transaction: %w", err)
 	}
 
 	return plan, nil
@@ -145,10 +172,19 @@ ORDER BY m.id
 	return result, nil
 }
 
-func (s Store) EnablePlanModule(ctx context.Context, planID string, moduleID string) (modules.Module, error) {
+func (s Store) EnablePlanModule(ctx context.Context, platformActorID string, planID string, moduleID string) (modules.Module, error) {
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return modules.Module{}, fmt.Errorf("begin plan module enable transaction: %w", err)
+	}
+
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
+
 	var module modules.Module
 
-	err := s.db.QueryRow(ctx, `
+	err = tx.QueryRow(ctx, `
 WITH enabled AS (
 INSERT INTO control.plan_modules (
 plan_id,
@@ -178,10 +214,29 @@ LIMIT 1
 		return modules.Module{}, fmt.Errorf("enable plan module: %w", err)
 	}
 
+	if err := audit.InsertPlatform(ctx, tx, audit.PlatformEntry{
+		PlatformActorID: platformActorID,
+		Action:          "control.plan_module.enable",
+		TargetType:      "control.plan_module",
+		TargetID:        planID + ":" + moduleID,
+		Metadata: map[string]any{
+			"plan_id":   planID,
+			"module_id": module.ID,
+			"name":      module.Name,
+			"status":    module.Status,
+		},
+	}); err != nil {
+		return modules.Module{}, err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return modules.Module{}, fmt.Errorf("commit plan module enable transaction: %w", err)
+	}
+
 	return module, nil
 }
 
-func (s Store) AssignTenantSubscription(ctx context.Context, tenantID string, input AssignSubscriptionInput) (Subscription, []modules.Module, error) {
+func (s Store) AssignTenantSubscription(ctx context.Context, platformActorID string, tenantID string, input AssignSubscriptionInput) (Subscription, []modules.Module, error) {
 	input.PlanID = strings.TrimSpace(input.PlanID)
 	input.Status = strings.TrimSpace(input.Status)
 
@@ -262,6 +317,27 @@ SET enabled_at = now(),
 
 	enabledModules, err := listPlanModulesTx(ctx, tx, input.PlanID)
 	if err != nil {
+		return Subscription{}, nil, err
+	}
+
+	moduleIDs := make([]string, 0, len(enabledModules))
+	for _, module := range enabledModules {
+		moduleIDs = append(moduleIDs, module.ID)
+	}
+
+	if err := audit.InsertPlatform(ctx, tx, audit.PlatformEntry{
+		PlatformActorID: platformActorID,
+		Action:          "control.tenant_subscription.assign",
+		TargetType:      "control.tenant_subscription",
+		TargetID:        subscription.ID,
+		TenantID:        tenantID,
+		Metadata: map[string]any{
+			"tenant_id":       tenantID,
+			"plan_id":         subscription.PlanID,
+			"status":          subscription.Status,
+			"enabled_modules": moduleIDs,
+		},
+	}); err != nil {
 		return Subscription{}, nil, err
 	}
 

@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/audit"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -73,7 +74,7 @@ ORDER BY created_at DESC, id DESC
 	return tenants, nil
 }
 
-func (s Store) CreateTenant(ctx context.Context, input CreateTenantInput) (Tenant, error) {
+func (s Store) CreateTenant(ctx context.Context, platformActorID string, input CreateTenantInput) (Tenant, error) {
 	input.Slug = strings.TrimSpace(input.Slug)
 	input.LegalName = strings.TrimSpace(input.LegalName)
 	input.DisplayName = strings.TrimSpace(input.DisplayName)
@@ -83,9 +84,18 @@ func (s Store) CreateTenant(ctx context.Context, input CreateTenantInput) (Tenan
 		input.Status = "trial"
 	}
 
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return Tenant{}, fmt.Errorf("begin tenant create transaction: %w", err)
+	}
+
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
+
 	var tenant Tenant
 
-	err := s.db.QueryRow(ctx, `
+	err = tx.QueryRow(ctx, `
 INSERT INTO control.tenants (
 slug,
 legal_name,
@@ -110,6 +120,26 @@ RETURNING id::text, slug, legal_name, display_name, status, created_at, updated_
 	)
 	if err != nil {
 		return Tenant{}, fmt.Errorf("insert tenant: %w", err)
+	}
+
+	if err := audit.InsertPlatform(ctx, tx, audit.PlatformEntry{
+		PlatformActorID: platformActorID,
+		Action:          "control.tenant.create",
+		TargetType:      "control.tenant",
+		TargetID:        tenant.ID,
+		TenantID:        tenant.ID,
+		Metadata: map[string]any{
+			"slug":         tenant.Slug,
+			"legal_name":   tenant.LegalName,
+			"display_name": tenant.DisplayName,
+			"status":       tenant.Status,
+		},
+	}); err != nil {
+		return Tenant{}, err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return Tenant{}, fmt.Errorf("commit tenant create transaction: %w", err)
 	}
 
 	return tenant, nil
