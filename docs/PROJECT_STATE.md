@@ -867,3 +867,22 @@ No behavior change intended.
 Next recommended step:
 
 - Run full verification and commit.
+
+## 2026-07-01 update
+
+Control-plane route parsing was cleaned and tested.
+
+New files:
+
+- internal/platform/controlapi/routes.go
+- internal/platform/controlapi/routes_test.go
+
+New ADR:
+
+- docs/decisions/0016-tested-control-plane-route-parsing.md
+
+No behavior change intended.
+
+Next recommended step:
+
+- Run full verification and commit.

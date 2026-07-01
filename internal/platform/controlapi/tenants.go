@@ -123,46 +123,6 @@ func (a *App) tenantSubresourceHandler(w http.ResponseWriter, r *http.Request) {
 	http.NotFound(w, r)
 }
 
-func parseTenantModulePath(path string) (tenantID string, moduleID string, action string, ok bool) {
-	const prefix = "/control/v1/tenants/"
-
-	if !strings.HasPrefix(path, prefix) {
-		return "", "", "", false
-	}
-
-	rest := strings.Trim(strings.TrimPrefix(path, prefix), "/")
-	parts := strings.Split(rest, "/")
-
-	if len(parts) == 2 && parts[0] != "" && parts[1] == "modules" {
-		return parts[0], "", "list", true
-	}
-
-	if len(parts) == 4 && parts[0] != "" && parts[1] == "modules" && parts[2] != "" {
-		if parts[3] == "enable" || parts[3] == "disable" {
-			return parts[0], parts[2], parts[3], true
-		}
-	}
-
-	return "", "", "", false
-}
-
-func parseTenantSubscriptionPath(path string) (tenantID string, ok bool) {
-	const prefix = "/control/v1/tenants/"
-
-	if !strings.HasPrefix(path, prefix) {
-		return "", false
-	}
-
-	rest := strings.Trim(strings.TrimPrefix(path, prefix), "/")
-	parts := strings.Split(rest, "/")
-
-	if len(parts) == 2 && parts[0] != "" && parts[1] == "subscription" {
-		return parts[0], true
-	}
-
-	return "", false
-}
-
 func (a *App) assignTenantSubscription(w http.ResponseWriter, r *http.Request, tenantID string) {
 	var input licensing.AssignSubscriptionInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {

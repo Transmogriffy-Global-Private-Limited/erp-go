@@ -101,27 +101,6 @@ func (a *App) planSubresourceHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func parsePlanModulePath(path string) (planID string, moduleID string, action string, ok bool) {
-	const prefix = "/control/v1/plans/"
-
-	if !strings.HasPrefix(path, prefix) {
-		return "", "", "", false
-	}
-
-	rest := strings.Trim(strings.TrimPrefix(path, prefix), "/")
-	parts := strings.Split(rest, "/")
-
-	if len(parts) == 2 && parts[0] != "" && parts[1] == "modules" {
-		return parts[0], "", "list", true
-	}
-
-	if len(parts) == 4 && parts[0] != "" && parts[1] == "modules" && parts[2] != "" && parts[3] == "enable" {
-		return parts[0], parts[2], "enable", true
-	}
-
-	return "", "", "", false
-}
-
 func (a *App) listPlanModules(w http.ResponseWriter, r *http.Request, planID string) {
 	modules, err := a.licensing.ListPlanModules(r.Context(), planID)
 	if err != nil {

@@ -873,3 +873,38 @@ Current next step:
 - Restart control-plane-api.
 - Run verify-all.ps1.
 - Commit if verification passes.
+
+## 2026-07-01
+
+### Cleaned and tested control-plane route parsing
+
+Added:
+
+- internal/platform/controlapi/routes.go
+- internal/platform/controlapi/routes_test.go
+- docs/decisions/0016-tested-control-plane-route-parsing.md
+
+Updated:
+
+- internal/platform/controlapi/tenants.go
+- internal/platform/controlapi/plans.go
+
+Behavior:
+
+- No intended external behavior change.
+- Tenant module path parsing moved into route helpers.
+- Tenant subscription path parsing moved into route helpers.
+- Plan module path parsing moved into route helpers.
+- Route parsing now has unit tests.
+
+Reason:
+
+- Control-plane route parsing should not be buried inside handler files.
+- Future route additions need tested parsing behavior.
+
+Current next step:
+
+- Run go test ./...
+- Restart control-plane-api.
+- Run verify-all.ps1.
+- Commit after success.
