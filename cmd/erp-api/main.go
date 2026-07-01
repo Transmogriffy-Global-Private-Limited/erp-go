@@ -50,18 +50,11 @@ func main() {
 		tenantSessions: auth.NewTenantSessionStore(pool),
 	}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/api/v1/auth/login", app.tenantLoginHandler)
-	mux.HandleFunc("/api/v1/auth/me", app.tenantMeHandler)
-	mux.HandleFunc("/api/v1/auth/logout", app.tenantLogoutHandler)
-	mux.HandleFunc("/healthz", app.healthHandler)
-	mux.HandleFunc("/healthz/db", app.dbHealthHandler)
-	mux.Handle("/api/v1/modules", tenantMiddleware(http.HandlerFunc(app.enabledModulesHandler)))
-	mux.HandleFunc("/api/v1/inventory/items", app.inventoryItemsSessionHandler)
+	handler := app.routes()
 
 	server := &http.Server{
 		Addr:              addr,
-		Handler:           logRequests(mux),
+		Handler:           logRequests(handler),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
