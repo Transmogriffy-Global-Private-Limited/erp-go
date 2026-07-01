@@ -1311,3 +1311,26 @@ Behavior:
 Reason:
 
 - The first session-backed Inventory route bypassed module entitlement checks.
+
+## 2026-07-01
+
+### Added ERP route wiring regression guard
+
+Added:
+
+- scripts/verify-erp-route-wiring.ps1
+- docs/decisions/0029-erp-route-wiring-regression-guard.md
+
+Updated:
+
+- scripts/verify-all.ps1
+
+Behavior:
+
+- verify-all.ps1 now checks ERP route wiring statically.
+- The check ensures Inventory is routed through session auth and module entitlement.
+- The check prevents reintroducing internal X-User-ID injection in the Inventory session handler.
+
+Reason:
+
+- Inventory session migration exposed route wiring fragility.

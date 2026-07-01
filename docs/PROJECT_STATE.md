@@ -1148,3 +1148,17 @@ Fix:
 Updated verification:
 
 - scripts/verify-module-entitlement.ps1 now reports exact HTTP status/body.
+
+## 2026-07-01 update
+
+ERP route wiring regression guard was added.
+
+New script:
+
+- scripts/verify-erp-route-wiring.ps1
+
+It prevents Inventory route/session/module-entitlement regressions.
+
+Next recommended step:
+
+- Run full verification and commit.

@@ -38,6 +38,9 @@ Invoke-Step -Name "Go tests" -Action {
     throw "go test ./... failed."
   }
 }
+Invoke-Step -Name "ERP route wiring verification" -Action {
+  & (Join-Path $PSScriptRoot "verify-erp-route-wiring.ps1")
+}
 
 Invoke-Step -Name "Database connectivity" -Action {
   & (Join-Path $PSScriptRoot "db-check.ps1") -EnvFile $EnvFile
@@ -169,6 +172,7 @@ Invoke-Step -Name "Outbox worker verification" -Action {
 
 Write-Host ""
 Write-Host "All verification checks passed."
+
 
 
 
