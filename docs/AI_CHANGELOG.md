@@ -336,3 +336,35 @@ Current next step:
 
 - Seed local dev tenant.
 - Verify both module endpoints return DB-backed data.
+
+## 2026-07-01
+
+### Added tenant-scoped DB transactions and Inventory items API
+
+Added:
+
+- internal/platform/db/tenant.go
+- internal/modules/inventory/store.go
+- docs/decisions/0006-tenant-scoped-db-transactions.md
+
+Updated:
+
+- cmd/erp-api/main.go
+- README.md
+
+Behavior:
+
+- Tenant-owned DB operations now have a required helper for setting app.tenant_id inside a transaction.
+- ERP API now supports GET /api/v1/inventory/items.
+- ERP API now supports POST /api/v1/inventory/items.
+
+Reason:
+
+- PostgreSQL RLS policies depend on app.tenant_id.
+- Tenant isolation must be enforced in runtime code, not only in SQL migrations.
+- Inventory items are the first real tenant-owned ERP resource.
+
+Current next step:
+
+- Verify inventory item create/list through erp-api.
+- Confirm tenant-scoped access works through RLS.

@@ -433,3 +433,29 @@ Next recommended step:
 
 - Run seed-dev-tenant.ps1.
 - Verify module endpoints from both services.
+
+## 2026-07-01 update
+
+Tenant-scoped DB execution foundation was added.
+
+New helper:
+
+- internal/platform/db.WithTenantTx
+
+New ADR:
+
+- docs/decisions/0006-tenant-scoped-db-transactions.md
+
+New Inventory APIs:
+
+- GET /api/v1/inventory/items
+- POST /api/v1/inventory/items
+
+Important rule:
+
+- Tenant-owned module stores must use WithTenantTx or equivalent before touching tenant-owned tables.
+
+Next recommended step:
+
+- Verify Inventory item create/list using dev tenant.
+- Then add a second tenant seed/check to prove RLS isolation.

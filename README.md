@@ -11,8 +11,10 @@ This repository currently contains the first bootable backend spine:
 - shared HTTP response helpers
 - tenant context helper
 - shared PostgreSQL runtime connection helper
+- tenant-scoped DB transaction helper
 - native PowerShell migration workflow
 - DB-backed module registry reads
+- first tenant-owned Inventory items API
 
 ## Control Plane
 
@@ -81,6 +83,18 @@ Module endpoints:
 
 Invoke-RestMethod http://localhost:8081/control/v1/modules
 Invoke-RestMethod http://localhost:8080/api/v1/modules -Headers @{ "X-Tenant-ID" = "00000000-0000-0000-0000-000000000001" }
+
+Inventory items:
+
+Invoke-RestMethod http://localhost:8080/api/v1/inventory/items -Headers @{ "X-Tenant-ID" = "00000000-0000-0000-0000-000000000001" }
+
+$item = @{
+  sku = "DEV-ITEM-001"
+  name = "Dev Item 001"
+  description = "First dev inventory item"
+} | ConvertTo-Json
+
+Invoke-RestMethod http://localhost:8080/api/v1/inventory/items -Method Post -ContentType "application/json" -Headers @{ "X-Tenant-ID" = "00000000-0000-0000-0000-000000000001" } -Body $item
 
 ## Project memory
 
