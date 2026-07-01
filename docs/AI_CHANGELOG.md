@@ -1227,3 +1227,87 @@ Current next step:
 - Run verify-tenant-session.ps1.
 - Run verify-all.ps1.
 - Commit after success.
+
+## 2026-07-01
+
+### Migrated Inventory APIs to ERP session auth
+
+Added:
+
+- cmd/erp-api/session_middleware.go
+- scripts/Get-TenantSessionHeaders.ps1
+- scripts/verify-inventory-session-auth.ps1
+- docs/decisions/0026-inventory-apis-require-erp-sessions.md
+
+Updated:
+
+- cmd/erp-api/main.go
+- scripts/verify-rbac.ps1
+- scripts/verify-module-entitlement.ps1
+- scripts/verify-audit-outbox.ps1
+- scripts/verify-outbox-worker.ps1
+- scripts/verify-tenant-isolation.ps1
+- scripts/verify-all.ps1
+
+Behavior:
+
+- Inventory APIs require X-Tenant-ID and X-ERP-Session.
+- X-User-ID is rejected for Inventory APIs.
+- ERP session resolves tenant user and feeds RBAC/audit context.
+
+Reason:
+
+- Business APIs should not trust caller-supplied user IDs.
+
+Current next step:
+
+- Restart erp-api.
+- Run verify-inventory-session-auth.ps1.
+- Run verify-all.ps1.
+- Commit after success.
+
+## 2026-07-01
+
+### Added automatic local API restart for verification
+
+Added:
+
+- scripts/restart-local-apis.ps1
+- scripts/ensure-local-apis.ps1
+- docs/decisions/0027-local-verification-restarts-apis.md
+
+Updated:
+
+- scripts/verify-all.ps1
+- scripts/verify-inventory-session-auth.ps1
+- scripts/verify-rbac.ps1
+- scripts/verify-tenant-isolation.ps1
+
+Behavior:
+
+- verify-all.ps1 restarts control-plane-api and erp-api before verification.
+- Key individual verification scripts also restart APIs when run directly.
+- Restart kills stale processes on ports 8080 and 8081, starts fresh API windows, and waits for health/db health.
+
+Reason:
+
+- Avoid stale-process failures after code changes.
+
+## 2026-07-01
+
+### Fixed Inventory ERP session entitlement path
+
+Updated:
+
+- cmd/erp-api/inventory_session_handler.go
+- scripts/verify-module-entitlement.ps1
+
+Behavior:
+
+- Inventory API still requires X-Tenant-ID and X-ERP-Session.
+- The session-backed Inventory handler now preserves requireModule("inventory") entitlement enforcement.
+- Module entitlement verification now uses Invoke-WebRequest -SkipHttpErrorCheck so failures report exact HTTP status and body.
+
+Reason:
+
+- The first session-backed Inventory route bypassed module entitlement checks.

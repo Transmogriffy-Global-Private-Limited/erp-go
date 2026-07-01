@@ -46,10 +46,10 @@ Write-Host ""
 Write-Host "Ensuring inventory module is enabled..."
 Invoke-RestMethod "$ControlPlaneUrl/control/v1/tenants/$TenantID/modules/inventory/enable" -Method Post -Headers $PlatformHeaders | Out-Null
 
-$Headers = @{
-  "X-Tenant-ID" = $TenantID
-  "X-User-ID" = $UserID
-}
+$Headers = & (Join-Path $PSScriptRoot "Get-TenantSessionHeaders.ps1") `
+  -BaseUrl $BaseUrl `
+  -TenantID $TenantID `
+  -UserKind "allowed"
 
 $Sku = "AUDIT-OUTBOX-" + (Get-Date -Format "yyyyMMddHHmmss") + "-" + (Get-Random -Minimum 1000 -Maximum 9999)
 
@@ -112,3 +112,4 @@ Write-Host "Outbox row verified."
 
 Write-Host ""
 Write-Host "Audit/outbox verification passed."
+

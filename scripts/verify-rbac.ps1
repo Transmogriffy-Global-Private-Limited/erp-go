@@ -12,6 +12,10 @@ $ErrorActionPreference = "Stop"
 $RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 Set-Location $RepoRoot
 
+& (Join-Path $PSScriptRoot "ensure-local-apis.ps1") `
+  -BaseUrl $BaseUrl `
+  -ControlPlaneUrl $ControlPlaneUrl
+
 $PlatformHeaders = & (Join-Path $PSScriptRoot "Get-PlatformSessionHeaders.ps1") `
   -ControlPlaneUrl $ControlPlaneUrl `
   -EnvFile $EnvFile
@@ -29,17 +33,19 @@ Write-Host "Seeding RBAC..."
 
 Write-Host ""
 Write-Host "Ensuring inventory module is enabled..."
-Invoke-RestMethod "$ControlPlaneUrl/control/v1/tenants/$TenantID/modules/inventory/enable" -Method Post -Headers $PlatformHeaders | Out-Null
+Invoke-RestMethod "$ControlPlaneUrl/control/v1/tenants/$TenantID/modules/inventory/enable" `
+  -Method Post `
+  -Headers $PlatformHeaders | Out-Null
 
-$AllowedHeaders = @{
-  "X-Tenant-ID" = $TenantID
-  "X-User-ID" = $AllowedUserID
-}
+$AllowedHeaders = & (Join-Path $PSScriptRoot "Get-TenantSessionHeaders.ps1") `
+  -BaseUrl $BaseUrl `
+  -TenantID $TenantID `
+  -UserKind "allowed"
 
-$NoAccessHeaders = @{
-  "X-Tenant-ID" = $TenantID
-  "X-User-ID" = $NoAccessUserID
-}
+$NoAccessHeaders = & (Join-Path $PSScriptRoot "Get-TenantSessionHeaders.ps1") `
+  -BaseUrl $BaseUrl `
+  -TenantID $TenantID `
+  -UserKind "noaccess"
 
 $Sku = "RBAC-" + (Get-Date -Format "yyyyMMddHHmmss") + "-" + (Get-Random -Minimum 1000 -Maximum 9999)
 
@@ -117,3 +123,4 @@ Expect-Forbidden -Label "No-access create" -Action {
 
 Write-Host ""
 Write-Host "RBAC verification passed."
+

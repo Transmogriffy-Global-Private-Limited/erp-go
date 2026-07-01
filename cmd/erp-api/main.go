@@ -57,10 +57,7 @@ func main() {
 	mux.HandleFunc("/healthz", app.healthHandler)
 	mux.HandleFunc("/healthz/db", app.dbHealthHandler)
 	mux.Handle("/api/v1/modules", tenantMiddleware(http.HandlerFunc(app.enabledModulesHandler)))
-	mux.Handle(
-		"/api/v1/inventory/items",
-		tenantMiddleware(userMiddleware(app.requireModule("inventory", http.HandlerFunc(app.inventoryItemsHandler)))),
-	)
+	mux.HandleFunc("/api/v1/inventory/items", app.inventoryItemsSessionHandler)
 
 	server := &http.Server{
 		Addr:              addr,

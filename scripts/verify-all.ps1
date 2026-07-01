@@ -9,6 +9,10 @@ $ErrorActionPreference = "Stop"
 $RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 Set-Location $RepoRoot
 
+& (Join-Path $PSScriptRoot "ensure-local-apis.ps1") `
+  -BaseUrl $BaseUrl `
+  -ControlPlaneUrl $ControlPlaneUrl
+
 function Invoke-Step {
   param(
     [string] $Name,
@@ -68,6 +72,12 @@ Invoke-Step -Name "ERP API health" -Action {
 }
 Invoke-Step -Name "Tenant session verification" -Action {
   & (Join-Path $PSScriptRoot "verify-tenant-session.ps1") `
+    -BaseUrl $BaseUrl `
+    -ControlPlaneUrl $ControlPlaneUrl `
+    -EnvFile $EnvFile
+}
+Invoke-Step -Name "Inventory ERP session auth verification" -Action {
+  & (Join-Path $PSScriptRoot "verify-inventory-session-auth.ps1") `
     -BaseUrl $BaseUrl `
     -ControlPlaneUrl $ControlPlaneUrl `
     -EnvFile $EnvFile
@@ -159,4 +169,6 @@ Invoke-Step -Name "Outbox worker verification" -Action {
 
 Write-Host ""
 Write-Host "All verification checks passed."
+
+
 

@@ -1098,3 +1098,53 @@ Next recommended step:
 
 - Verify tenant sessions.
 - Then migrate protected ERP APIs to X-ERP-Session.
+
+## 2026-07-01 update
+
+Inventory APIs were migrated to ERP session auth.
+
+Required headers:
+
+- X-Tenant-ID
+- X-ERP-Session
+
+Rejected old header path:
+
+- X-User-ID
+
+New verification:
+
+- scripts/verify-inventory-session-auth.ps1
+
+Next recommended step:
+
+- Verify and commit.
+
+## 2026-07-01 update
+
+Local verification now restarts APIs automatically.
+
+New scripts:
+
+- scripts/restart-local-apis.ps1
+- scripts/ensure-local-apis.ps1
+
+This prevents stale running API processes from causing false verification failures.
+
+Next recommended step:
+
+- Run full verification and commit.
+
+## 2026-07-01 update
+
+Inventory ERP session handler now preserves module entitlement enforcement.
+
+Fix:
+
+- session auth resolves tenant/user
+- internal Inventory handler compatibility remains
+- requireModule("inventory") is now applied before Inventory handler execution
+
+Updated verification:
+
+- scripts/verify-module-entitlement.ps1 now reports exact HTTP status/body.
