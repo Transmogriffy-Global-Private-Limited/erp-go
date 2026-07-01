@@ -18,10 +18,9 @@ if (-not $env:MIGRATION_DATABASE_URL) {
 
 $PlatformActorID = "00000000-0000-0000-0000-00000000aaaa"
 
-$PlatformHeaders = @{
-  "X-Platform-User-ID" = $PlatformActorID
-  "X-Platform-Role" = "superadmin"
-}
+$PlatformHeaders = & (Join-Path $PSScriptRoot "Get-PlatformSessionHeaders.ps1") `
+  -ControlPlaneUrl $ControlPlaneUrl `
+  -EnvFile $EnvFile
 
 function Invoke-ScalarSql {
   param(

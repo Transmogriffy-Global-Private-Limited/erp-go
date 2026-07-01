@@ -8,9 +8,6 @@ $ErrorActionPreference = "Stop"
 $RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 Set-Location $RepoRoot
 
-Write-Host "Seeding platform superadmin..."
-& (Join-Path $PSScriptRoot "seed-platform-superadmin.ps1") -EnvFile $EnvFile
-
 function Assert-Status {
   param(
     [scriptblock] $Action,
@@ -27,14 +24,13 @@ function Assert-Status {
   Write-Host "$Label returned HTTP $ExpectedStatus as expected."
 }
 
-$SuperadminHeaders = @{
-  "X-Platform-User-ID" = "00000000-0000-0000-0000-00000000aaaa"
-  "X-Platform-Role" = "viewer"
-}
+Write-Host "Creating platform session..."
+$SessionHeaders = & (Join-Path $PSScriptRoot "Get-PlatformSessionHeaders.ps1") `
+  -ControlPlaneUrl $ControlPlaneUrl `
+  -EnvFile $EnvFile
 
-$UnknownUserHeaders = @{
-  "X-Platform-User-ID" = "00000000-0000-0000-0000-00000000bbbb"
-  "X-Platform-Role" = "superadmin"
+$BadSessionHeaders = @{
+  "X-Platform-Session" = "not-a-valid-session-token"
 }
 
 Write-Host ""
@@ -47,21 +43,21 @@ if ($Health.status -ne "ok") {
 Write-Host "Health is public."
 
 Write-Host ""
-Write-Host "Checking control endpoint without platform user..."
-Assert-Status -ExpectedStatus 401 -Label "No platform user" -Action {
+Write-Host "Checking control endpoint without platform auth..."
+Assert-Status -ExpectedStatus 401 -Label "No platform auth" -Action {
   Invoke-WebRequest "$ControlPlaneUrl/control/v1/modules" -SkipHttpErrorCheck
 }
 
 Write-Host ""
-Write-Host "Checking control endpoint with unknown platform user..."
-Assert-Status -ExpectedStatus 403 -Label "Unknown platform user" -Action {
-  Invoke-WebRequest "$ControlPlaneUrl/control/v1/modules" -Headers $UnknownUserHeaders -SkipHttpErrorCheck
+Write-Host "Checking control endpoint with invalid session..."
+Assert-Status -ExpectedStatus 403 -Label "Invalid platform session" -Action {
+  Invoke-WebRequest "$ControlPlaneUrl/control/v1/modules" -Headers $BadSessionHeaders -SkipHttpErrorCheck
 }
 
 Write-Host ""
-Write-Host "Checking control endpoint with DB-backed superadmin..."
-Assert-Status -ExpectedStatus 200 -Label "DB-backed superadmin" -Action {
-  Invoke-WebRequest "$ControlPlaneUrl/control/v1/modules" -Headers $SuperadminHeaders -SkipHttpErrorCheck
+Write-Host "Checking control endpoint with DB-backed session..."
+Assert-Status -ExpectedStatus 200 -Label "DB-backed platform session" -Action {
+  Invoke-WebRequest "$ControlPlaneUrl/control/v1/modules" -Headers $SessionHeaders -SkipHttpErrorCheck
 }
 
 Write-Host ""

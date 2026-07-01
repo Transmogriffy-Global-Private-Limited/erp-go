@@ -947,3 +947,24 @@ Next recommended step:
 
 - Apply migration 000005.
 - Verify sessions and full project.
+
+## 2026-07-01 update
+
+Control-plane verification scripts were moved to platform sessions.
+
+New helper:
+
+- scripts/Get-PlatformSessionHeaders.ps1
+
+Updated scripts now call control-plane APIs with:
+
+- X-Platform-Session
+
+Temporary fallback still exists:
+
+- X-Platform-User-ID
+
+Next recommended step:
+
+- Run full verification.
+- Remove X-Platform-User-ID fallback in the following step.

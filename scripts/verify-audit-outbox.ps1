@@ -17,10 +17,9 @@ if (-not $env:MIGRATION_DATABASE_URL) {
   throw "MIGRATION_DATABASE_URL is missing. Copy .env.example to .env and edit it."
 }
 
-$PlatformHeaders = @{
-  "X-Platform-User-ID" = "00000000-0000-0000-0000-00000000aaaa"
-  "X-Platform-Role" = "superadmin"
-}
+$PlatformHeaders = & (Join-Path $PSScriptRoot "Get-PlatformSessionHeaders.ps1") `
+  -ControlPlaneUrl $ControlPlaneUrl `
+  -EnvFile $EnvFile
 
 function Invoke-ScalarSql {
   param(

@@ -988,3 +988,37 @@ Current next step:
 - Run verify-platform-session.ps1.
 - Run verify-all.ps1.
 - Commit after success.
+
+## 2026-07-01
+
+### Moved control-plane verification scripts to platform sessions
+
+Added:
+
+- scripts/Get-PlatformSessionHeaders.ps1
+- docs/decisions/0019-control-plane-verification-uses-platform-sessions.md
+
+Updated:
+
+- scripts/verify-control-plane-auth.ps1
+- scripts/verify-rbac.ps1
+- scripts/verify-module-entitlement.ps1
+- scripts/verify-audit-outbox.ps1
+- scripts/verify-outbox-worker.ps1
+- scripts/verify-plans-subscriptions.ps1
+- scripts/verify-control-plane-audit.ps1
+
+Behavior:
+
+- Verification scripts now use X-Platform-Session for control-plane API calls.
+- X-Platform-User-ID fallback still exists in server code for this step.
+- verify-control-plane-auth.ps1 checks missing auth, invalid session, and valid DB-backed session.
+
+Reason:
+
+- Scripts must prove the session path before the temporary platform user header fallback is removed.
+
+Current next step:
+
+- Run verify-all.ps1.
+- Commit after success.

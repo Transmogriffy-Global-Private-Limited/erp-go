@@ -11,10 +11,9 @@ $ErrorActionPreference = "Stop"
 $RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 Set-Location $RepoRoot
 
-$PlatformHeaders = @{
-  "X-Platform-User-ID" = "00000000-0000-0000-0000-00000000aaaa"
-  "X-Platform-Role" = "superadmin"
-}
+$PlatformHeaders = & (Join-Path $PSScriptRoot "Get-PlatformSessionHeaders.ps1") `
+  -ControlPlaneUrl $ControlPlaneUrl `
+  -EnvFile $EnvFile
 
 Write-Host "Seeding tenant..."
 & (Join-Path $PSScriptRoot "seed-dev-tenant.ps1") -TenantID $TenantID -EnvFile $EnvFile
