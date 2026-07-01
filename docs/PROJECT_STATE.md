@@ -331,3 +331,23 @@ Next recommended step:
 
 - Mark the already-applied 000001_platform_foundation migration as applied.
 - Verify apply-migration.ps1 skips it on rerun.
+
+## 2026-07-01 update
+
+Native migration workflow has been verified locally.
+
+Verified state:
+
+- PostgreSQL connection works through scripts/db-check.ps1
+- 000001_platform_foundation was applied to local database
+- public.schema_migrations exists
+- 000001_platform_foundation is marked as applied
+- scripts/apply-migration.ps1 -Direction up safely skips the already-applied migration
+- branch anubhab-work is clean and pushed after commit 44a88d6
+
+Current next recommended step:
+
+- Connect Go services to PostgreSQL using ERP_DATABASE_URL.
+- Add shared DB package.
+- Add /healthz/db endpoint for erp-api and control-plane-api.
+- Ensure runtime DB role is treated separately from migration owner role.

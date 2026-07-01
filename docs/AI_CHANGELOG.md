@@ -221,3 +221,26 @@ Current next step:
 
 - Mark 000001_platform_foundation as applied in public.schema_migrations.
 - Re-run apply-migration.ps1 and confirm it skips the already-applied migration.
+
+## 2026-07-01
+
+### Verified native database migration workflow
+
+Verified locally:
+
+- scripts/db-check.ps1 connects successfully to PostgreSQL
+- 000001_platform_foundation is applied
+- public.schema_migrations tracks the migration
+- scripts/apply-migration.ps1 skips rerunning the already-applied migration
+- commit 44a88d6 was pushed to origin/anubhab-work
+
+Reason:
+
+- The database foundation is no longer only SQL in the repo.
+- The local native migration workflow is proven.
+- The next safe implementation step is application runtime DB connectivity.
+
+Current next step:
+
+- Add shared Go database configuration/connection package.
+- Add DB health endpoints.
