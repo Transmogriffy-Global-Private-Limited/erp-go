@@ -14,7 +14,7 @@ Never commit .env.
 
 Control-plane APIs currently require:
 
-- X-Platform-User-ID
+- X-Platform-Session
 - X-Platform-Role: superadmin
 
 ERP APIs currently require:
@@ -99,3 +99,4 @@ The native migration script uses:
 public.schema_migrations
 
 This prevents accidentally rerunning migrations that have already been applied.
+

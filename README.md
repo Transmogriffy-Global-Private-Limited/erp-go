@@ -30,7 +30,7 @@ This repository currently contains the first bootable backend spine:
 
 Control-plane APIs require:
 
-- X-Platform-User-ID
+- X-Platform-Session
 - X-Platform-Role: superadmin
 
 ERP APIs currently use:
@@ -82,3 +82,4 @@ Read these first:
 - docs/PROJECT_STATE.md
 - docs/ARCHITECTURE_BASELINE.md
 - docs/AI_CHANGELOG.md
+

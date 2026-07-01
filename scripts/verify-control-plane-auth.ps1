@@ -33,6 +33,10 @@ $BadSessionHeaders = @{
   "X-Platform-Session" = "not-a-valid-session-token"
 }
 
+$OldFallbackHeaders = @{
+  "X-Platform-User-ID" = "00000000-0000-0000-0000-00000000aaaa"
+}
+
 Write-Host ""
 Write-Host "Checking health remains public..."
 $Health = Invoke-RestMethod "$ControlPlaneUrl/healthz"
@@ -46,6 +50,12 @@ Write-Host ""
 Write-Host "Checking control endpoint without platform auth..."
 Assert-Status -ExpectedStatus 401 -Label "No platform auth" -Action {
   Invoke-WebRequest "$ControlPlaneUrl/control/v1/modules" -SkipHttpErrorCheck
+}
+
+Write-Host ""
+Write-Host "Checking old X-Platform-User-ID fallback is rejected..."
+Assert-Status -ExpectedStatus 401 -Label "Old platform user fallback" -Action {
+  Invoke-WebRequest "$ControlPlaneUrl/control/v1/modules" -Headers $OldFallbackHeaders -SkipHttpErrorCheck
 }
 
 Write-Host ""

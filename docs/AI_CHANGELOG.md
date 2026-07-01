@@ -1022,3 +1022,34 @@ Current next step:
 
 - Run verify-all.ps1.
 - Commit after success.
+
+## 2026-07-01
+
+### Removed temporary X-Platform-User-ID fallback from control-plane auth
+
+Added:
+
+- docs/decisions/0020-control-plane-requires-platform-sessions.md
+
+Updated:
+
+- internal/platform/controlapi/auth.go
+- scripts/verify-control-plane-auth.ps1
+
+Behavior:
+
+- Protected /control/v1/* endpoints now require X-Platform-Session.
+- X-Platform-User-ID is no longer accepted as a fallback.
+- verify-control-plane-auth.ps1 now proves the old fallback is rejected.
+
+Reason:
+
+- Platform login/session support exists.
+- Direct platform user identity headers should not authorize control-plane access.
+
+Current next step:
+
+- Restart control-plane-api.
+- Run verify-control-plane-auth.ps1.
+- Run verify-all.ps1.
+- Commit after success.

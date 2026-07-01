@@ -968,3 +968,23 @@ Next recommended step:
 
 - Run full verification.
 - Remove X-Platform-User-ID fallback in the following step.
+
+## 2026-07-01 update
+
+Control-plane auth now requires platform sessions.
+
+Removed fallback:
+
+- X-Platform-User-ID
+
+Required protected control-plane header:
+
+- X-Platform-Session
+
+Updated verification:
+
+- scripts/verify-control-plane-auth.ps1 confirms old X-Platform-User-ID fallback is rejected.
+
+Next recommended step:
+
+- Run full verification and commit.
