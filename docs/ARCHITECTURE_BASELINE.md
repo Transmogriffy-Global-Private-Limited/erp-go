@@ -74,7 +74,7 @@ Database: PostgreSQL
 Cache: Redis
 Event Bus: NATS JetStream
 Filestore: S3-compatible object storage
-Deployment: Docker first, Kubernetes later only if justified
+Deployment: no Docker/container local workflow; deployment strategy to be decided later
 
 ## Database model
 

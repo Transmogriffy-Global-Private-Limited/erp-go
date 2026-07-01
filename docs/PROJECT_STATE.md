@@ -274,3 +274,17 @@ The migration creates schemas, control plane tables, tenant user/RBAC base, docu
 Next recommended step:
 
 - Add Docker Compose infrastructure for local PostgreSQL, Redis, NATS JetStream, and S3-compatible object storage.
+
+## 2026-07-01 update
+
+A new development constraint was accepted:
+
+- no Docker
+- no Docker Compose
+- no container-based local development
+
+Future setup should use native Go tooling, PowerShell, native PostgreSQL or externally provided PostgreSQL, and non-container service options when needed.
+
+Next recommended step:
+
+- Add native database configuration and a PowerShell migration apply script using psql.

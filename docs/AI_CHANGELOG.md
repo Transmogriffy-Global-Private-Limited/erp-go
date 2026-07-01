@@ -146,3 +146,24 @@ Verification:
 Current next step:
 
 - Add local development infrastructure using Docker Compose for PostgreSQL, Redis, NATS, and object storage.
+
+## 2026-07-01
+
+### Accepted no-container local development constraint
+
+Added ADR:
+
+- docs/decisions/0005-no-containers-local-dev.md
+
+Decision:
+
+- Do not use Docker, Docker Compose, or container-based local infrastructure unless explicitly reversed later.
+
+Reason:
+
+- The project should fit the current Windows 11 + PowerShell + VS Code development environment.
+- Future agents must not keep suggesting container-based workflows.
+
+Current next step:
+
+- Add native database configuration and a PowerShell migration apply script using psql.

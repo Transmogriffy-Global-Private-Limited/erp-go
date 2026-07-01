@@ -144,7 +144,7 @@ Current intended stack:
 - Redis
 - NATS JetStream
 - S3-compatible object storage
-- Docker for local/dev deployment
+- No Docker or containers for local development unless explicitly reversed
 
 ### 10. Start modular monolith, not microservices
 
