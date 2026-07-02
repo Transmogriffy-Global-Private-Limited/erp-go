@@ -105,6 +105,13 @@ Invoke-Step -Name "Inventory locations verification" -Action {
     -ControlPlaneUrl $ControlPlaneUrl `
     -EnvFile $EnvFile
 }
+
+Invoke-Step -Name "Inventory stock verification" -Action {
+  & (Join-Path $PSScriptRoot "verify-inventory-stock.ps1") `
+    -BaseUrl $BaseUrl `
+    -ControlPlaneUrl $ControlPlaneUrl `
+    -EnvFile $EnvFile
+}
 Invoke-Step -Name "Control-plane auth verification" -Action {
   & (Join-Path $PSScriptRoot "verify-control-plane-auth.ps1") `
     -ControlPlaneUrl $ControlPlaneUrl `

@@ -1591,3 +1591,37 @@ Behavior:
 Reason:
 
 - Inventory locations are required before stock movements, stock ledgers, availability, receiving, and fulfillment can be modeled.
+
+## 2026-07-02
+
+### Added Inventory Stock Ledger
+
+Added:
+
+- migrations/000011_inventory_stock_movements.up.sql
+- migrations/000011_inventory_stock_movements.down.sql
+- internal/modules/inventory/stock.go
+- cmd/erp-api/inventory_stock_handlers.go
+- scripts/verify-inventory-stock.ps1
+- docs/decisions/0037-inventory-stock-ledger.md
+
+Updated:
+
+- cmd/erp-api/routes.go
+- scripts/seed-dev-rbac.ps1
+- scripts/verify-all.ps1
+- docs/PROJECT_STATE.md
+- docs/AI_CHANGELOG.md
+
+Behavior:
+
+- POST /api/v1/inventory/stock-movements creates posted stock movements.
+- GET /api/v1/inventory/stock-movements lists recent posted stock movements.
+- GET /api/v1/inventory/stock-balances returns balances derived from stock movement lines.
+- Stock movement creation writes audit and outbox records.
+- Dev RBAC seed now grants stock movement and stock balance permissions.
+- verify-all.ps1 now includes inventory stock verification.
+
+Reason:
+
+- Inventory stock must be ledger-based and auditable before purchase receipts, sales issues, availability, costing, and accounting integration can be modeled.

@@ -1374,3 +1374,41 @@ Updated verification:
 Next recommended step:
 
 - Add inventory stock movement / stock ledger foundation.
+
+## 2026-07-02 update
+
+Inventory Stock Ledger was added.
+
+New endpoints:
+
+- GET /api/v1/inventory/stock-movements
+- POST /api/v1/inventory/stock-movements
+- GET /api/v1/inventory/stock-balances
+
+New tables:
+
+- inventory.stock_movements
+- inventory.stock_movement_lines
+
+New permissions:
+
+- inventory.stock_movement.read
+- inventory.stock_movement.write
+- inventory.stock_balance.read
+
+New verification:
+
+- scripts/verify-inventory-stock.ps1
+
+Updated verification:
+
+- scripts/verify-all.ps1 now includes Inventory stock verification.
+
+Design note:
+
+- Stock balances are derived from append-only movement lines.
+- Item/location rows do not store mutable stock quantity.
+
+Next recommended step:
+
+- Add movement lifecycle or begin purchase receipt integration.
