@@ -1344,3 +1344,33 @@ Reason:
 
 - The verifier still used the pre-base-UOM inventory item payload.
 - It now creates an active Unit of Measure first and injects base_unit_id into the inventory item create request.
+
+## 2026-07-02 update
+
+Inventory Locations were added.
+
+New endpoints:
+
+- GET /api/v1/inventory/locations
+- POST /api/v1/inventory/locations
+
+New table:
+
+- inventory.locations
+
+New permissions:
+
+- inventory.location.read
+- inventory.location.write
+
+New verification:
+
+- scripts/verify-inventory-locations.ps1
+
+Updated verification:
+
+- scripts/verify-all.ps1 now includes Inventory locations verification.
+
+Next recommended step:
+
+- Add inventory stock movement / stock ledger foundation.

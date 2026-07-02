@@ -1557,3 +1557,37 @@ Behavior:
 Reason:
 
 - Inventory item creation now requires base_unit_id after linking items to Units of Measure.
+
+## 2026-07-02
+
+### Added Inventory Locations
+
+Added:
+
+- migrations/000010_inventory_locations.up.sql
+- migrations/000010_inventory_locations.down.sql
+- internal/modules/inventory/locations.go
+- cmd/erp-api/inventory_locations_handlers.go
+- scripts/verify-inventory-locations.ps1
+- docs/decisions/0036-inventory-locations.md
+
+Updated:
+
+- cmd/erp-api/routes.go
+- scripts/seed-dev-rbac.ps1
+- scripts/verify-all.ps1
+- docs/PROJECT_STATE.md
+- docs/AI_CHANGELOG.md
+
+Behavior:
+
+- GET /api/v1/inventory/locations lists tenant inventory locations.
+- POST /api/v1/inventory/locations creates tenant inventory locations.
+- Location codes are normalized to uppercase.
+- Location create writes audit and outbox records.
+- Dev RBAC seed now grants inventory.location.read and inventory.location.write to the allowed dev user.
+- verify-all.ps1 now includes inventory location verification.
+
+Reason:
+
+- Inventory locations are required before stock movements, stock ledgers, availability, receiving, and fulfillment can be modeled.
