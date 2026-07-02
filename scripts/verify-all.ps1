@@ -85,6 +85,12 @@ Invoke-Step -Name "Inventory ERP session auth verification" -Action {
     -ControlPlaneUrl $ControlPlaneUrl `
     -EnvFile $EnvFile
 }
+Invoke-Step -Name "Inventory units verification" -Action {
+  & (Join-Path $PSScriptRoot "verify-inventory-units.ps1") `
+    -BaseUrl $BaseUrl `
+    -ControlPlaneUrl $ControlPlaneUrl `
+    -EnvFile $EnvFile
+}
 
 Invoke-Step -Name "Control-plane auth verification" -Action {
   & (Join-Path $PSScriptRoot "verify-control-plane-auth.ps1") `
@@ -172,6 +178,7 @@ Invoke-Step -Name "Outbox worker verification" -Action {
 
 Write-Host ""
 Write-Host "All verification checks passed."
+
 
 
 

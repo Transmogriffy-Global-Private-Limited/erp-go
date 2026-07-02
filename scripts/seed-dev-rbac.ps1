@@ -71,7 +71,7 @@ VALUES
         '$AllowedRoleID',
         '$TenantID',
         'Dev Inventory Operator',
-        'Local dev role with inventory item read/write permissions'
+        'Local dev role with inventory item/unit read/write permissions'
     ),
     (
         '$NoAccessRoleID',
@@ -91,7 +91,9 @@ INSERT INTO core.role_permissions (
 )
 VALUES
     ('$TenantID', '$AllowedRoleID', 'inventory.item.read'),
-    ('$TenantID', '$AllowedRoleID', 'inventory.item.write')
+    ('$TenantID', '$AllowedRoleID', 'inventory.item.write'),
+    ('$TenantID', '$AllowedRoleID', 'inventory.unit.read'),
+    ('$TenantID', '$AllowedRoleID', 'inventory.unit.write')
 ON CONFLICT (tenant_id, role_id, permission_id) DO NOTHING;
 
 INSERT INTO core.user_roles (

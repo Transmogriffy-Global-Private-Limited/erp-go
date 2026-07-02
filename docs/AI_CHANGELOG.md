@@ -1401,3 +1401,33 @@ Behavior:
 Reason:
 
 - Keep ERP API boot, wiring, and handlers separated.
+
+## 2026-07-02
+
+### Added Inventory Units of Measure
+
+Added:
+
+- migrations/000008_inventory_units.up.sql
+- migrations/000008_inventory_units.down.sql
+- internal/modules/inventory/units.go
+- cmd/erp-api/inventory_units_handlers.go
+- scripts/verify-inventory-units.ps1
+- docs/decisions/0034-inventory-units-of-measure.md
+
+Updated:
+
+- cmd/erp-api/routes.go
+- scripts/seed-dev-rbac.ps1
+- scripts/verify-all.ps1
+
+Behavior:
+
+- GET /api/v1/inventory/units lists tenant units.
+- POST /api/v1/inventory/units creates tenant units.
+- Unit codes are normalized to uppercase.
+- Unit create writes audit and outbox records.
+
+Reason:
+
+- Units of Measure are foundational ERP master data needed before stock movements and item/unit links.

@@ -12,6 +12,7 @@ func (a *app) routes() http.Handler {
 	mux.HandleFunc("/healthz/db", a.dbHealthHandler)
 	mux.Handle("/api/v1/modules", tenantMiddleware(http.HandlerFunc(a.enabledModulesHandler)))
 	mux.HandleFunc("/api/v1/inventory/items", a.inventoryItemsSessionHandler)
+	mux.Handle("/api/v1/inventory/units", a.erpSessionMiddleware(a.requireModule("inventory", http.HandlerFunc(a.inventoryUnitsHandler))))
 
 	return mux
 }

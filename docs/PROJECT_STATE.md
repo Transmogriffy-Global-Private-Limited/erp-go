@@ -1212,3 +1212,24 @@ New constructor:
 - newApp(pool)
 
 cmd/erp-api/main.go is now mostly process boot.
+
+## 2026-07-02 update
+
+Inventory Units of Measure were added.
+
+New endpoints:
+
+- GET /api/v1/inventory/units
+- POST /api/v1/inventory/units
+
+New table:
+
+- inventory.units
+
+New verification:
+
+- scripts/verify-inventory-units.ps1
+
+Next recommended step:
+
+- Link inventory items to units after this passes.
