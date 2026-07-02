@@ -1625,3 +1625,38 @@ Behavior:
 Reason:
 
 - Inventory stock must be ledger-based and auditable before purchase receipts, sales issues, availability, costing, and accounting integration can be modeled.
+
+## 2026-07-02
+
+### Added Purchase Receipts Stock Integration
+
+Added:
+
+- migrations/000012_purchase_receipts.up.sql
+- migrations/000012_purchase_receipts.down.sql
+- internal/modules/purchase/receipts.go
+- cmd/erp-api/purchase_receipts_handlers.go
+- scripts/verify-purchase-receipts.ps1
+- docs/decisions/0038-purchase-receipts-stock-integration.md
+
+Updated:
+
+- cmd/erp-api/app.go
+- cmd/erp-api/routes.go
+- scripts/seed-dev-rbac.ps1
+- scripts/verify-all.ps1
+- docs/PROJECT_STATE.md
+- docs/AI_CHANGELOG.md
+
+Behavior:
+
+- POST /api/v1/purchase/receipts creates posted purchase receipts.
+- Purchase receipt creation also creates inventory stock movements with movement_type = receipt.
+- Receipt lines become positive inventory stock movement lines.
+- GET /api/v1/purchase/receipts lists recent tenant receipts.
+- Dev RBAC seed now grants purchase.receipt.read and purchase.receipt.write to the allowed dev user.
+- verify-all.ps1 now includes purchase receipt verification.
+
+Reason:
+
+- Purchased goods must enter inventory through the stock ledger before purchase orders, suppliers, payables, and accounting integration can be modeled safely.

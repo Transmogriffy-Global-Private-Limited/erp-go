@@ -98,7 +98,9 @@ VALUES
     ('$TenantID', '$AllowedRoleID', 'inventory.location.write'),
     ('$TenantID', '$AllowedRoleID', 'inventory.stock_movement.read'),
     ('$TenantID', '$AllowedRoleID', 'inventory.stock_movement.write'),
-    ('$TenantID', '$AllowedRoleID', 'inventory.stock_balance.read')
+    ('$TenantID', '$AllowedRoleID', 'inventory.stock_balance.read'),
+    ('$TenantID', '$AllowedRoleID', 'purchase.receipt.read'),
+    ('$TenantID', '$AllowedRoleID', 'purchase.receipt.write')
 ON CONFLICT (tenant_id, role_id, permission_id) DO NOTHING;
 
 INSERT INTO core.user_roles (

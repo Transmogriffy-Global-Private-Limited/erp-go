@@ -1412,3 +1412,40 @@ Design note:
 Next recommended step:
 
 - Add movement lifecycle or begin purchase receipt integration.
+
+## 2026-07-02 update
+
+Purchase Receipts Stock Integration was added.
+
+New endpoints:
+
+- GET /api/v1/purchase/receipts
+- POST /api/v1/purchase/receipts
+
+New tables:
+
+- purchase.receipts
+- purchase.receipt_lines
+
+New permissions:
+
+- purchase.receipt.read
+- purchase.receipt.write
+
+Behavior:
+
+- Purchase receipt creation creates inventory stock movements with movement_type = receipt.
+- Purchase receipt lines create positive inventory stock movement lines.
+- Stock balances update through the existing inventory stock ledger.
+
+New verification:
+
+- scripts/verify-purchase-receipts.ps1
+
+Updated verification:
+
+- scripts/verify-all.ps1 now includes Purchase receipts verification.
+
+Next recommended step:
+
+- Add suppliers and purchase orders, or add sales issue integration into stock movements.
