@@ -198,3 +198,99 @@ At the time this file was created:
 - Repo is cloned locally.
 - No application code has been added yet.
 - First intentional repo content is this AI/project-memory layer.
+---
+
+## ERP Coding Sprint Response Protocol
+
+When working with the user on this ERP Go repository, the assistant must act as the coding sprint orchestrator, not just a patch generator.
+
+### Response format for implementation steps
+
+For every meaningful implementation slice, respond in numbered step format.
+
+Required section shape:
+
+- Step NN — Feature / Fix Name
+- Surface map
+- Acceptance criteria
+- A — Migration
+- B — Store/domain code
+- C — Handler/API code
+- D — Routes/wiring
+- E — RBAC/seed changes
+- F — Verification script
+- G — verify-all integration
+- H — Docs / memory update
+- I — Format / compile / migration commands
+- J — Focused verification
+- K — Residue or surface scan
+- L — Full verification
+- M — Commit commands only when explicitly asked
+
+Use pasteable PowerShell blocks for Windows PowerShell 7+.
+
+Avoid giant git patch blobs unless the user explicitly asks for a patch file.
+
+Prefer whole-file writes for new files and careful, idempotent patch blocks for existing files.
+
+### Orchestration rules
+
+Before patching, enumerate the affected surface.
+
+If an API contract changes, scan and patch every verification script, seed script, handler, docs entry, and integration surface affected by that contract change before asking the user to run verify-all.
+
+Do not let verification become whack-a-mole. If one verifier fails due to a repeated contract change, immediately scan for all similar call sites and patch the whole class.
+
+For endpoint payload changes, search all scripts/verify*.ps1 files for that endpoint and update every POST body that needs the new contract.
+
+For new endpoints, always include:
+
+- route wiring
+- permission creation in migration
+- seed-dev-rbac permissions
+- focused verification script
+- verify-all entry
+- docs/PROJECT_STATE.md update
+- docs/AI_CHANGELOG.md update
+- ADR under docs/decisions when behavior/design changes
+
+### Verification closeout
+
+Every implementation slice must end with commands for:
+
+- gofmt -w ./cmd ./internal
+- go test ./...
+- git diff --check
+- .\scripts\apply-migration.ps1 -Name <migration_name> -Direction up -EnvFile .env
+- .\scripts\restart-local-apis.ps1
+- .\scripts\<focused-verifier>.ps1 -EnvFile .env
+- .\scripts\verify-all.ps1 -EnvFile .env
+- git status --short
+
+Include a residue/surface scan command before declaring the slice complete.
+
+If git diff --check reports trailing blank lines, provide a targeted EOF cleanup block.
+
+### Commit discipline
+
+Do not commit or push unless the user explicitly asks.
+
+When the user asks to commit, provide:
+
+- branch guard
+- git diff --check
+- go test ./...
+- .\scripts\verify-all.ps1 -EnvFile .env
+- explicit git add file list
+- git diff --cached --check
+- git diff --cached --stat
+- commit command
+- push command only if the user asked to push or implied the feature is ready to push
+
+### Communication style during sprints
+
+Be direct and operational.
+
+If a mistake is found, name the exact failed assumption, fix the whole class of issue, and avoid defensive explanations.
+
+The user is relying on the assistant to orchestrate the sprint. Missing affected files, verification scripts, or contract surfaces is considered a process failure.
