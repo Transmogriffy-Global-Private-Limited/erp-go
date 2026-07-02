@@ -1233,3 +1233,114 @@ New verification:
 Next recommended step:
 
 - Link inventory items to units after this passes.
+
+## 2026-07-02 update
+
+Inventory items were linked to base Units of Measure.
+
+New migration:
+
+- migrations/000009_inventory_item_base_units.up.sql
+- migrations/000009_inventory_item_base_units.down.sql
+
+Updated behavior:
+
+- POST /api/v1/inventory/items now requires base_unit_id.
+- base_unit_id must reference an active unit in the same tenant.
+- GET /api/v1/inventory/items now returns base_unit_id and base_unit details.
+- Inventory item create audit/outbox payloads include base-unit information.
+
+New verification:
+
+- scripts/verify-inventory-item-units.ps1
+
+Note:
+
+- inventory.items.base_unit_id is nullable at the database layer for now so existing rows do not break during migration.
+- New API-created items require a base unit.
+
+Next recommended step:
+
+- Apply migration 000009.
+- Run scripts/verify-inventory-item-units.ps1.
+- Then run scripts/verify-all.ps1.
+
+### Follow-up verification header fix
+
+Inventory session auth verifier unit creation now uses tenant ERP session headers.
+
+Updated:
+
+- scripts/verify-inventory-session-auth.ps1
+
+Reason:
+
+- The temporary Unit of Measure creation request requires X-Tenant-ID before the verifier can create an item with base_unit_id.
+
+### Follow-up RBAC verification fix
+
+RBAC verification was updated for inventory item base_unit_id.
+
+Updated:
+
+- scripts/verify-rbac.ps1
+
+Reason:
+
+- The verifier still used the pre-base-UOM inventory item payload.
+- It now creates an active Unit of Measure first and injects base_unit_id into the allowed inventory item create request.
+
+### Follow-up tenant isolation verification fix
+
+Tenant isolation verification was updated for inventory item base_unit_id.
+
+Updated:
+
+- scripts/verify-tenant-isolation.ps1
+
+Reason:
+
+- The verifier still used the pre-base-UOM inventory item payload.
+- It now creates an active Unit of Measure first and injects base_unit_id into the tenant-scoped inventory item create request.
+
+### Follow-up audit/outbox verification fix
+
+Audit/outbox verification was updated for inventory item base_unit_id.
+
+Updated:
+
+- scripts/verify-audit-outbox.ps1
+
+Reason:
+
+- The verifier still used the pre-base-UOM inventory item payload.
+- It now creates an active Unit of Measure first and injects base_unit_id into the inventory item create request.
+
+### Follow-up verification sweep
+
+Inventory item verification scripts were swept for base_unit_id.
+
+Updated:
+
+- scripts/verify-inventory-session-auth.ps1
+- scripts/verify-rbac.ps1
+- scripts/verify-tenant-isolation.ps1
+- scripts/verify-audit-outbox.ps1
+
+Reason:
+
+- Multiple verifiers still created inventory items with the old payload.
+- They now create active Units of Measure and inject base_unit_id before item creation.
+
+### Follow-up outbox worker verification fix
+
+Outbox worker verification was updated for inventory item base_unit_id.
+
+Updated:
+
+- scripts/verify-outbox-worker.ps1
+
+Reason:
+
+- The verifier still used the pre-base-UOM inventory item payload.
+- It now creates an active Unit of Measure first and injects base_unit_id into the inventory item create request.

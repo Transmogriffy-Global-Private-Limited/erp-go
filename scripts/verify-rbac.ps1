@@ -56,6 +56,31 @@ $Body = @{
 } | ConvertTo-Json
 
 Write-Host ""
+$RBACUnitCode = "RBACUOM" + (Get-Random -Minimum 10000 -Maximum 99999)
+
+$RBACUnitBody = @{
+  code = $RBACUnitCode.ToLower()
+  name = "RBAC Verification Unit $RBACUnitCode"
+  description = "Created by RBAC verification"
+} | ConvertTo-Json
+
+Write-Host ""
+Write-Host "Creating active base unit for RBAC item: $RBACUnitCode"
+$RBACCreatedUnit = Invoke-RestMethod "$BaseUrl/api/v1/inventory/units" `
+  -Method Post `
+  -ContentType "application/json" `
+  -Headers $AllowedHeaders `
+  -Body $RBACUnitBody
+
+if (-not $RBACCreatedUnit.unit.id) {
+  throw "Create RBAC unit did not return unit.id."
+}
+
+Write-Host "Adding base_unit_id to RBAC item body..."
+$RBACBodyObject = $Body | ConvertFrom-Json
+$RBACBodyObject | Add-Member -NotePropertyName "base_unit_id" -NotePropertyValue $RBACCreatedUnit.unit.id -Force
+$Body = $RBACBodyObject | ConvertTo-Json
+
 Write-Host "Allowed user creating inventory item..."
 $Created = Invoke-RestMethod "$BaseUrl/api/v1/inventory/items" `
   -Method Post `

@@ -2,12 +2,14 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
+	"net/http"
+	"strings"
+
 	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/modules/inventory"
 	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/auth"
 	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/httpx"
 	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/tenancy"
-	"net/http"
-	"strings"
 )
 
 func (a *app) enabledModulesHandler(w http.ResponseWriter, r *http.Request) {
@@ -77,6 +79,7 @@ func (a *app) createInventoryItem(w http.ResponseWriter, r *http.Request) {
 	input.Name = strings.TrimSpace(input.Name)
 	input.Description = strings.TrimSpace(input.Description)
 	input.Status = strings.TrimSpace(input.Status)
+	input.BaseUnitID = strings.TrimSpace(input.BaseUnitID)
 
 	if input.SKU == "" {
 		httpx.Error(w, http.StatusBadRequest, "sku_required", "sku is required")
@@ -85,6 +88,16 @@ func (a *app) createInventoryItem(w http.ResponseWriter, r *http.Request) {
 
 	if input.Name == "" {
 		httpx.Error(w, http.StatusBadRequest, "name_required", "name is required")
+		return
+	}
+
+	if input.BaseUnitID == "" {
+		httpx.Error(w, http.StatusBadRequest, "base_unit_required", "base_unit_id is required")
+		return
+	}
+
+	if !looksLikeUUID(input.BaseUnitID) {
+		httpx.Error(w, http.StatusBadRequest, "invalid_base_unit_id", "base_unit_id must be a UUID")
 		return
 	}
 
@@ -97,6 +110,11 @@ func (a *app) createInventoryItem(w http.ResponseWriter, r *http.Request) {
 
 	item, err := a.inventory.CreateItem(r.Context(), tenantID, userID, input)
 	if err != nil {
+		if errors.Is(err, inventory.ErrBaseUnitNotFound) {
+			httpx.Error(w, http.StatusBadRequest, "base_unit_invalid", "base_unit_id must reference an active inventory unit")
+			return
+		}
+
 		httpx.Error(w, http.StatusInternalServerError, "inventory_item_create_failed", "failed to create inventory item")
 		return
 	}
@@ -105,4 +123,25 @@ func (a *app) createInventoryItem(w http.ResponseWriter, r *http.Request) {
 		"tenant_id": tenantID,
 		"item":      item,
 	})
+}
+
+func looksLikeUUID(value string) bool {
+	if len(value) != 36 {
+		return false
+	}
+
+	for i, r := range value {
+		switch i {
+		case 8, 13, 18, 23:
+			if r != '-' {
+				return false
+			}
+		default:
+			if !((r >= '0' && r <= '9') || (r >= 'a' && r <= 'f') || (r >= 'A' && r <= 'F')) {
+				return false
+			}
+		}
+	}
+
+	return true
 }

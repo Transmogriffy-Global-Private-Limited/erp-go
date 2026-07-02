@@ -1431,3 +1431,129 @@ Behavior:
 Reason:
 
 - Units of Measure are foundational ERP master data needed before stock movements and item/unit links.
+
+## 2026-07-02
+
+### Linked Inventory Items to Base Units of Measure
+
+Added:
+
+- migrations/000009_inventory_item_base_units.up.sql
+- migrations/000009_inventory_item_base_units.down.sql
+- scripts/verify-inventory-item-units.ps1
+- docs/decisions/0035-inventory-item-base-units.md
+
+Updated:
+
+- internal/modules/inventory/store.go
+- cmd/erp-api/business_handlers.go
+- scripts/verify-all.ps1
+- docs/PROJECT_STATE.md
+- docs/AI_CHANGELOG.md
+
+Behavior:
+
+- Inventory items now have base_unit_id support.
+- New item creation requires base_unit_id.
+- The base unit must be tenant-owned and active.
+- Item list/create responses include base_unit_id and compact base_unit details.
+- Item create audit/outbox records include base-unit information.
+- verify-all.ps1 now includes inventory item/base unit verification.
+
+Reason:
+
+- Inventory items need a base Unit of Measure before stock movement, purchase, sales, costing, and future conversion workflows can be modeled safely.
+
+### Fixed Inventory Session Auth Verifier Tenant Headers
+
+Updated:
+
+- scripts/verify-inventory-session-auth.ps1
+
+Behavior:
+
+- The verifier now creates its temporary Unit of Measure using tenant ERP session headers.
+- The session-auth item creation test still uses the intended X-ERP-Session path.
+
+Reason:
+
+- The temporary unit creation request is tenant-scoped and must include X-Tenant-ID.
+
+### Updated RBAC Verification for Inventory Item Base Units
+
+Updated:
+
+- scripts/verify-rbac.ps1
+
+Behavior:
+
+- RBAC verification now creates an active Unit of Measure before creating an inventory item.
+- The allowed-user inventory item payload now includes base_unit_id.
+
+Reason:
+
+- Inventory item creation now requires base_unit_id after linking items to Units of Measure.
+
+### Updated Tenant Isolation Verification for Inventory Item Base Units
+
+Updated:
+
+- scripts/verify-tenant-isolation.ps1
+
+Behavior:
+
+- Tenant isolation verification now creates an active Unit of Measure before creating an inventory item.
+- The tenant-scoped inventory item payload now includes base_unit_id.
+
+Reason:
+
+- Inventory item creation now requires base_unit_id after linking items to Units of Measure.
+
+### Updated Audit Outbox Verification for Inventory Item Base Units
+
+Updated:
+
+- scripts/verify-audit-outbox.ps1
+
+Behavior:
+
+- Audit/outbox verification now creates an active Unit of Measure before creating an inventory item.
+- The inventory item payload now includes base_unit_id.
+
+Reason:
+
+- Inventory item creation now requires base_unit_id after linking items to Units of Measure.
+
+### Swept Inventory Item Verification Scripts for Base Units
+
+Updated:
+
+- scripts/verify-inventory-session-auth.ps1
+- scripts/verify-rbac.ps1
+- scripts/verify-tenant-isolation.ps1
+- scripts/verify-audit-outbox.ps1
+
+Behavior:
+
+- Inventory item verification scripts now create an active Unit of Measure before creating inventory items.
+- Inventory item verification payloads now include base_unit_id.
+
+Reason:
+
+- Inventory item creation now requires base_unit_id after linking items to Units of Measure.
+- Existing verification scripts still used the pre-base-UOM item payload shape.
+
+### Updated Outbox Worker Verification for Inventory Item Base Units
+
+Updated:
+
+- scripts/verify-outbox-worker.ps1
+
+Behavior:
+
+- Outbox worker verification now creates an active Unit of Measure before creating an inventory item.
+- The inventory item payload now includes base_unit_id.
+
+Reason:
+
+- Inventory item creation now requires base_unit_id after linking items to Units of Measure.

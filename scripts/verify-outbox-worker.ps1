@@ -60,6 +60,31 @@ $Body = @{
 } | ConvertTo-Json
 
 Write-Host ""
+$OutboxWorkerUnitCode = "OWUOM" + (Get-Random -Minimum 10000 -Maximum 99999)
+
+$OutboxWorkerUnitBody = @{
+  code = $OutboxWorkerUnitCode.ToLower()
+  name = "Outbox Worker Unit $OutboxWorkerUnitCode"
+  description = "Created by outbox worker verification"
+} | ConvertTo-Json
+
+Write-Host ""
+Write-Host "Creating active base unit for outbox-worker item: $OutboxWorkerUnitCode"
+$OutboxWorkerCreatedUnit = Invoke-RestMethod "$BaseUrl/api/v1/inventory/units" `
+  -Method Post `
+  -ContentType "application/json" `
+  -Headers $Headers `
+  -Body $OutboxWorkerUnitBody
+
+if (-not $OutboxWorkerCreatedUnit.unit.id) {
+  throw "Create outbox-worker unit did not return unit.id."
+}
+
+Write-Host "Adding base_unit_id to outbox-worker item body..."
+$OutboxWorkerBodyObject = $Body | ConvertFrom-Json
+$OutboxWorkerBodyObject | Add-Member -NotePropertyName "base_unit_id" -NotePropertyValue $OutboxWorkerCreatedUnit.unit.id -Force
+$Body = $OutboxWorkerBodyObject | ConvertTo-Json
+
 Write-Host "Creating inventory item with SKU: $Sku"
 $Created = Invoke-RestMethod "$BaseUrl/api/v1/inventory/items" `
   -Method Post `

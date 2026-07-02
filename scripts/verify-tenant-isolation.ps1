@@ -69,6 +69,31 @@ $Body = @{
 } | ConvertTo-Json
 
 Write-Host ""
+$TenantIsolationUnitCode = "TISO-UOM" + (Get-Random -Minimum 10000 -Maximum 99999)
+
+$TenantIsolationUnitBody = @{
+  code = $TenantIsolationUnitCode.ToLower()
+  name = "Tenant Isolation Unit $TenantIsolationUnitCode"
+  description = "Created by tenant isolation verification"
+} | ConvertTo-Json
+
+Write-Host ""
+Write-Host "Creating active base unit for tenant-isolation item: $TenantIsolationUnitCode"
+$TenantIsolationCreatedUnit = Invoke-RestMethod "$BaseUrl/api/v1/inventory/units" `
+  -Method Post `
+  -ContentType "application/json" `
+  -Headers $HeadersA `
+  -Body $TenantIsolationUnitBody
+
+if (-not $TenantIsolationCreatedUnit.unit.id) {
+  throw "Create tenant-isolation unit did not return unit.id."
+}
+
+Write-Host "Adding base_unit_id to tenant-isolation item body..."
+$TenantIsolationBodyObject = $Body | ConvertFrom-Json
+$TenantIsolationBodyObject | Add-Member -NotePropertyName "base_unit_id" -NotePropertyValue $TenantIsolationCreatedUnit.unit.id -Force
+$Body = $TenantIsolationBodyObject | ConvertTo-Json
+
 Write-Host "Creating item under tenant A with SKU: $Sku"
 Invoke-RestMethod "$BaseUrl/api/v1/inventory/items" `
   -Method Post `

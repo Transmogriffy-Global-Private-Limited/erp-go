@@ -49,6 +49,37 @@ $Body = @{
 } | ConvertTo-Json
 
 Write-Host ""
+
+$UnitCode = "SESSUOM" + (Get-Random -Minimum 10000 -Maximum 99999)
+
+$UnitHeaders = & (Join-Path $PSScriptRoot "Get-TenantSessionHeaders.ps1") `
+  -BaseUrl $BaseUrl `
+  -TenantID $TenantID `
+  -UserKind "allowed"
+
+$UnitBody = @{
+  code = $UnitCode.ToLower()
+  name = "Session Auth Unit $UnitCode"
+  description = "Created by inventory session auth verification"
+} | ConvertTo-Json
+
+Write-Host ""
+Write-Host "Creating active base unit for session-auth item: $UnitCode"
+$CreatedUnit = Invoke-RestMethod "$BaseUrl/api/v1/inventory/units" `
+  -Method Post `
+  -ContentType "application/json" `
+  -Headers $UnitHeaders `
+  -Body $UnitBody
+
+if (-not $CreatedUnit.unit.id) {
+  throw "Create unit did not return unit.id."
+}
+
+Write-Host "Adding base_unit_id to session-auth item body..."
+$BodyObject = $Body | ConvertFrom-Json
+$BodyObject | Add-Member -NotePropertyName "base_unit_id" -NotePropertyValue $CreatedUnit.unit.id -Force
+$Body = $BodyObject | ConvertTo-Json
+
 Write-Host "Creating inventory item with X-ERP-Session..."
 $Created = Invoke-RestMethod "$BaseUrl/api/v1/inventory/items" `
   -Method Post `
@@ -100,4 +131,8 @@ catch {
 
 Write-Host ""
 Write-Host "Inventory ERP session migration verification passed."
+
+
+
+
 
