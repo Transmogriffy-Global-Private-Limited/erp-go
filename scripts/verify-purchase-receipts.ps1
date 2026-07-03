@@ -109,8 +109,107 @@ if (-not $Location.location.id) {
   throw "Create location did not return location.id."
 }
 
+Write-Host ""
+Write-Host "Creating receipt verification supplier..."
+$Supplier = Invoke-RestMethod "$BaseUrl/api/v1/purchase/suppliers" `
+  -Method Post `
+  -ContentType "application/json" `
+  -Headers $Headers `
+  -Body (@{
+    code = "RCVSUP$Suffix"
+    name = "Receipt Supplier $Suffix"
+  } | ConvertTo-Json)
+
+Write-Host "Creating and approving purchase order..."
+$Order = Invoke-RestMethod "$BaseUrl/api/v1/purchase/orders" `
+  -Method Post `
+  -ContentType "application/json" `
+  -Headers $Headers `
+  -Body (@{
+    supplier_id = $Supplier.supplier.id
+    supplier_reference = "supplier-ref-$Suffix"
+    currency_code = "INR"
+    lines = @(
+      @{
+        item_id = $Item.item.id
+        quantity = "10.000"
+        unit_price = "25.0000"
+      }
+    )
+  } | ConvertTo-Json -Depth 10)
+
+Write-Host "Verifying draft purchase order cannot be received..."
+$DraftReceiptResponse = Invoke-WebRequest "$BaseUrl/api/v1/purchase/receipts" `
+  -Method Post `
+  -ContentType "application/json" `
+  -Headers $Headers `
+  -Body (@{
+    purchase_order_id = $Order.purchase_order.id
+    lines = @(
+      @{
+        item_id = $Item.item.id
+        location_id = $Location.location.id
+        quantity_received = "1.000"
+      }
+    )
+  } | ConvertTo-Json -Depth 10) `
+  -SkipHttpErrorCheck
+
+if ($DraftReceiptResponse.StatusCode -ne 400) {
+  throw "Expected draft purchase order receipt to return 400."
+}
+
+$DraftReceiptError = $DraftReceiptResponse.Content | ConvertFrom-Json
+if ($DraftReceiptError.error.code -ne "purchase_order_not_approved") {
+  throw "Expected purchase_order_not_approved, got $($DraftReceiptError.error.code)."
+}
+
+$ApprovedOrder = Invoke-RestMethod "$BaseUrl/api/v1/purchase/orders/$($Order.purchase_order.id)/approve" `
+  -Method Post `
+  -Headers $Headers
+
+if ($ApprovedOrder.purchase_order.status -ne "approved") {
+  throw "Purchase order was not approved."
+}
+
+Write-Host "Verifying unordered item cannot be received..."
+$OtherItem = Invoke-RestMethod "$BaseUrl/api/v1/inventory/items" `
+  -Method Post `
+  -ContentType "application/json" `
+  -Headers $Headers `
+  -Body (@{
+    sku = "RCVOTHER-$Suffix"
+    name = "Unordered Receipt Item $Suffix"
+    base_unit_id = $Unit.unit.id
+  } | ConvertTo-Json)
+
+$UnorderedItemResponse = Invoke-WebRequest "$BaseUrl/api/v1/purchase/receipts" `
+  -Method Post `
+  -ContentType "application/json" `
+  -Headers $Headers `
+  -Body (@{
+    purchase_order_id = $Order.purchase_order.id
+    lines = @(
+      @{
+        item_id = $OtherItem.item.id
+        location_id = $Location.location.id
+        quantity_received = "1.000"
+      }
+    )
+  } | ConvertTo-Json -Depth 10) `
+  -SkipHttpErrorCheck
+
+if ($UnorderedItemResponse.StatusCode -ne 400) {
+  throw "Expected unordered receipt item to return 400."
+}
+
+$UnorderedItemError = $UnorderedItemResponse.Content | ConvertFrom-Json
+if ($UnorderedItemError.error.code -ne "receipt_item_not_on_order") {
+  throw "Expected receipt_item_not_on_order, got $($UnorderedItemError.error.code)."
+}
+
 $ReceiptBody = @{
-  supplier_name = "Verification Supplier $Suffix"
+  purchase_order_id = $Order.purchase_order.id
   reference = "supplier-ref-$Suffix"
   notes = "Created by purchase receipt verification"
   lines = @(
@@ -136,6 +235,14 @@ if (-not $Receipt.receipt.id) {
 
 if (-not $Receipt.receipt.stock_movement_id) {
   throw "Create purchase receipt did not return stock_movement_id."
+}
+
+if ($Receipt.receipt.purchase_order_id -ne $Order.purchase_order.id) {
+  throw "Receipt did not return the linked purchase_order_id."
+}
+
+if ($Receipt.receipt.supplier.id -ne $Supplier.supplier.id) {
+  throw "Receipt supplier was not derived from the purchase order."
 }
 
 if (@($Receipt.receipt.lines).Count -ne 1) {
@@ -198,9 +305,67 @@ if ($Balance.quantity -ne "7.000") {
 Write-Host "Purchase receipt stock balance verified."
 
 Write-Host ""
+Write-Host "Verifying over-receipt is rejected..."
+$OverReceiptBody = @{
+  purchase_order_id = $Order.purchase_order.id
+  lines = @(
+    @{
+      item_id = $Item.item.id
+      location_id = $Location.location.id
+      quantity_received = "4.000"
+    }
+  )
+} | ConvertTo-Json -Depth 10
+
+$OverReceiptResponse = Invoke-WebRequest "$BaseUrl/api/v1/purchase/receipts" `
+  -Method Post `
+  -ContentType "application/json" `
+  -Headers $Headers `
+  -Body $OverReceiptBody `
+  -SkipHttpErrorCheck
+
+if ($OverReceiptResponse.StatusCode -ne 409) {
+  throw "Expected over-receipt to return 409, got $($OverReceiptResponse.StatusCode)."
+}
+
+$OverReceiptError = $OverReceiptResponse.Content | ConvertFrom-Json
+if ($OverReceiptError.error.code -ne "receipt_quantity_exceeds_remaining") {
+  throw "Expected receipt_quantity_exceeds_remaining, got $($OverReceiptError.error.code)."
+}
+
+Write-Host "Over-receipt rejection verified."
+
+Write-Host ""
+Write-Host "Receiving exact remaining quantity..."
+$RemainingReceiptBody = @{
+  purchase_order_id = $Order.purchase_order.id
+  lines = @(
+    @{
+      item_id = $Item.item.id
+      location_id = $Location.location.id
+      quantity_received = "3.000"
+    }
+  )
+} | ConvertTo-Json -Depth 10
+
+Invoke-RestMethod "$BaseUrl/api/v1/purchase/receipts" `
+  -Method Post `
+  -ContentType "application/json" `
+  -Headers $Headers `
+  -Body $RemainingReceiptBody | Out-Null
+
+$FinalBalances = Invoke-RestMethod "$BaseUrl/api/v1/inventory/stock-balances" -Headers $Headers
+$FinalBalance = @($FinalBalances.balances | Where-Object { $_.item_id -eq $Item.item.id -and $_.location_id -eq $Location.location.id }) | Select-Object -First 1
+if ($FinalBalance.quantity -ne "10.000") {
+  throw "Expected final stock balance 10.000, got $($FinalBalance.quantity)."
+}
+
+Write-Host "Partial receipt completion verified."
+
+Write-Host ""
 Write-Host "Verifying invalid zero quantity is rejected..."
 $ZeroReceiptBody = @{
-  supplier_name = "Zero Supplier $Suffix"
+  purchase_order_id = $Order.purchase_order.id
   lines = @(
     @{
       item_id = $Item.item.id

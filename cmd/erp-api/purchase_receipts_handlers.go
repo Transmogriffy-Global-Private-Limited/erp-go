@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"math/big"
 	"net/http"
 	"strings"
@@ -55,12 +56,12 @@ func (a *app) createPurchaseReceipt(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	input.SupplierName = strings.TrimSpace(input.SupplierName)
+	input.PurchaseOrderID = strings.TrimSpace(input.PurchaseOrderID)
 	input.Reference = strings.TrimSpace(input.Reference)
 	input.Notes = strings.TrimSpace(input.Notes)
 
-	if input.SupplierName == "" {
-		httpx.Error(w, http.StatusBadRequest, "supplier_name_required", "supplier_name is required")
+	if !looksLikeUUID(input.PurchaseOrderID) {
+		httpx.Error(w, http.StatusBadRequest, "invalid_purchase_order_id", "purchase_order_id must be a UUID")
 		return
 	}
 
@@ -103,6 +104,18 @@ func (a *app) createPurchaseReceipt(w http.ResponseWriter, r *http.Request) {
 	userID, _ := auth.UserIDFromContext(r.Context())
 
 	receipt, err := a.purchase.CreateReceipt(r.Context(), tenantID, userID, input)
+	if errors.Is(err, purchase.ErrReceiptPurchaseOrderNotApproved) {
+		httpx.Error(w, http.StatusBadRequest, "purchase_order_not_approved", "purchase order must be approved and belong to the tenant")
+		return
+	}
+	if errors.Is(err, purchase.ErrReceiptItemNotOnOrder) {
+		httpx.Error(w, http.StatusBadRequest, "receipt_item_not_on_order", "each receipt item must exist on the purchase order")
+		return
+	}
+	if errors.Is(err, purchase.ErrReceiptQuantityExceedsRemaining) {
+		httpx.Error(w, http.StatusConflict, "receipt_quantity_exceeds_remaining", "receipt quantity exceeds the purchase order remaining quantity")
+		return
+	}
 	if err != nil {
 		httpx.Error(w, http.StatusInternalServerError, "purchase_receipt_create_failed", "failed to create purchase receipt")
 		return

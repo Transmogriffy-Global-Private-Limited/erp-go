@@ -1746,3 +1746,39 @@ Current next step:
 - Apply migration 000014_purchase_orders.
 - Run scripts/verify-purchase-orders.ps1.
 - Run scripts/verify-all.ps1.
+
+## 2026-07-03
+
+### Required Approved Purchase Orders for Receipts
+
+Added:
+
+- migrations/000015_purchase_receipt_order_link.up.sql
+- migrations/000015_purchase_receipt_order_link.down.sql
+- docs/decisions/0041-purchase-receipts-require-approved-orders.md
+
+Updated:
+
+- internal/modules/purchase/receipts.go
+- cmd/erp-api/purchase_receipts_handlers.go
+- scripts/verify-purchase-receipts.ps1
+- README.md
+- docs/PROJECT_STATE.md
+- docs/AI_CHANGELOG.md
+
+Behavior:
+
+- New receipts require purchase_order_id.
+- The order must be approved and tenant-owned.
+- Supplier data is derived from the linked order.
+- Only ordered items can be received.
+- Cumulative receipts cannot exceed ordered quantity.
+- Purchase Order locking serializes concurrent remaining-quantity checks.
+- Receipt, stock movement, audit, and outbox writes remain atomic.
+
+Current next step:
+
+- Apply migration 000015_purchase_receipt_order_link.
+- Restart the APIs.
+- Run scripts/verify-purchase-receipts.ps1.
+- Run scripts/verify-all.ps1.

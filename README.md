@@ -24,6 +24,7 @@ This repository currently contains the first bootable backend spine:
 - first tenant-owned Inventory items API
 - tenant-owned Purchase suppliers API
 - tenant-owned Purchase Order lifecycle API
+- approved-order-backed Purchase receiving with over-receipt prevention
 - audit and outbox writes on Inventory item creation
 - DB-backed outbox worker v1
 - master verification script

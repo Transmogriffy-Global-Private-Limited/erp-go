@@ -1519,3 +1519,31 @@ New verification:
 Next recommended step:
 
 - Link Purchase Receipts to approved Purchase Orders and enforce supplier/item/order consistency while keeping Inventory stock posting inside the receipt transaction.
+
+## 2026-07-03 update
+
+Purchase Receipts now require approved Purchase Orders.
+
+New migration:
+
+- migrations/000015_purchase_receipt_order_link
+
+Updated contract:
+
+- POST /api/v1/purchase/receipts requires purchase_order_id instead of caller-supplied supplier_name.
+- The linked order must be approved and tenant-owned.
+- Supplier identity and name are derived from the Purchase Order.
+- Receipt items must exist on the Purchase Order.
+- Cumulative receipt quantities cannot exceed ordered quantities.
+- The order row is locked while checking remaining quantities to prevent concurrent over-receipt.
+- Existing receipt rows remain readable through nullable migration columns.
+
+Updated verification:
+
+- scripts/verify-purchase-receipts.ps1 creates and approves an order before receiving.
+- The verifier covers draft-order rejection, unordered-item rejection, partial receipts, over-receipt rejection, exact completion, stock movement, stock balance, and RBAC.
+- The existing verify-all Purchase Receipt entry exercises the new contract.
+
+Next recommended step:
+
+- Add ordered/received/remaining quantity projections and partially_received/received Purchase Order lifecycle states.

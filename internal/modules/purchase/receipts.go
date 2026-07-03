@@ -2,6 +2,7 @@ package purchase
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -24,16 +25,19 @@ func NewStore(db *pgxpool.Pool) Store {
 }
 
 type Receipt struct {
-	ID              string        `json:"id"`
-	ReceiptNumber   string        `json:"receipt_number"`
-	SupplierName    string        `json:"supplier_name"`
-	Reference       string        `json:"reference"`
-	Notes           string        `json:"notes"`
-	ReceivedAt      time.Time     `json:"received_at"`
-	Status          string        `json:"status"`
-	StockMovementID string        `json:"stock_movement_id"`
-	Lines           []ReceiptLine `json:"lines"`
-	CreatedAt       time.Time     `json:"created_at"`
+	ID                  string             `json:"id"`
+	ReceiptNumber       string             `json:"receipt_number"`
+	PurchaseOrderID     string             `json:"purchase_order_id"`
+	PurchaseOrderNumber string             `json:"purchase_order_number"`
+	Supplier            PurchaseOrderParty `json:"supplier"`
+	SupplierName        string             `json:"supplier_name"`
+	Reference           string             `json:"reference"`
+	Notes               string             `json:"notes"`
+	ReceivedAt          time.Time          `json:"received_at"`
+	Status              string             `json:"status"`
+	StockMovementID     string             `json:"stock_movement_id"`
+	Lines               []ReceiptLine      `json:"lines"`
+	CreatedAt           time.Time          `json:"created_at"`
 }
 
 type ReceiptLine struct {
@@ -48,12 +52,18 @@ type ReceiptLine struct {
 }
 
 type CreateReceiptInput struct {
-	SupplierName string              `json:"supplier_name"`
-	Reference    string              `json:"reference"`
-	Notes        string              `json:"notes"`
-	ReceivedAt   time.Time           `json:"received_at"`
-	Lines        []CreateReceiptLine `json:"lines"`
+	PurchaseOrderID string              `json:"purchase_order_id"`
+	Reference       string              `json:"reference"`
+	Notes           string              `json:"notes"`
+	ReceivedAt      time.Time           `json:"received_at"`
+	Lines           []CreateReceiptLine `json:"lines"`
 }
+
+var (
+	ErrReceiptPurchaseOrderNotApproved = errors.New("purchase order not found or not approved")
+	ErrReceiptItemNotOnOrder           = errors.New("receipt item is not on purchase order")
+	ErrReceiptQuantityExceedsRemaining = errors.New("receipt quantity exceeds purchase order remaining quantity")
+)
 
 type CreateReceiptLine struct {
 	ItemID           string `json:"item_id"`
@@ -67,17 +77,27 @@ func (s Store) ListReceipts(ctx context.Context, tenantID string) ([]Receipt, er
 	err := platformdb.WithTenantTx(ctx, s.db, tenantID, func(tx pgx.Tx) error {
 		rows, err := tx.Query(ctx, `
 SELECT
-    id::text,
-    receipt_number,
-    supplier_name,
-    reference,
-    notes,
-    received_at,
-    status,
-    stock_movement_id::text,
-    created_at
-FROM purchase.receipts
-ORDER BY received_at DESC, created_at DESC, id DESC
+    r.id::text,
+    r.receipt_number,
+    COALESCE(r.purchase_order_id::text, ''),
+    COALESCE(po.order_number, ''),
+    COALESCE(r.supplier_id::text, ''),
+    COALESCE(s.code, ''),
+    r.supplier_name,
+    r.reference,
+    r.notes,
+    r.received_at,
+    r.status,
+    r.stock_movement_id::text,
+    r.created_at
+FROM purchase.receipts r
+LEFT JOIN purchase.purchase_orders po
+    ON po.tenant_id = r.tenant_id
+   AND po.id = r.purchase_order_id
+LEFT JOIN purchase.suppliers s
+    ON s.tenant_id = r.tenant_id
+   AND s.id = r.supplier_id
+ORDER BY r.received_at DESC, r.created_at DESC, r.id DESC
 LIMIT 100
 `)
 		if err != nil {
@@ -92,6 +112,10 @@ LIMIT 100
 			if err := rows.Scan(
 				&receipt.ID,
 				&receipt.ReceiptNumber,
+				&receipt.PurchaseOrderID,
+				&receipt.PurchaseOrderNumber,
+				&receipt.Supplier.ID,
+				&receipt.Supplier.Code,
 				&receipt.SupplierName,
 				&receipt.Reference,
 				&receipt.Notes,
@@ -104,6 +128,7 @@ LIMIT 100
 			}
 
 			receipt.Lines = make([]ReceiptLine, 0)
+			receipt.Supplier.Name = receipt.SupplierName
 			receiptIndex[receipt.ID] = len(receipts)
 			receipts = append(receipts, receipt)
 		}
@@ -181,7 +206,7 @@ ORDER BY l.created_at ASC, l.id ASC
 }
 
 func (s Store) CreateReceipt(ctx context.Context, tenantID string, actorID string, input CreateReceiptInput) (Receipt, error) {
-	input.SupplierName = strings.TrimSpace(input.SupplierName)
+	input.PurchaseOrderID = strings.TrimSpace(input.PurchaseOrderID)
 	input.Reference = strings.TrimSpace(input.Reference)
 	input.Notes = strings.TrimSpace(input.Notes)
 
@@ -192,6 +217,29 @@ func (s Store) CreateReceipt(ctx context.Context, tenantID string, actorID strin
 	var receipt Receipt
 
 	err := platformdb.WithTenantTx(ctx, s.db, tenantID, func(tx pgx.Tx) error {
+		if err := tx.QueryRow(ctx, `
+SELECT po.id::text, po.order_number, s.id::text, s.code, s.name
+FROM purchase.purchase_orders po
+JOIN purchase.suppliers s
+    ON s.tenant_id = po.tenant_id
+   AND s.id = po.supplier_id
+WHERE po.id = $1::uuid
+  AND po.status = 'approved'
+FOR UPDATE OF po
+`, input.PurchaseOrderID).Scan(
+			&receipt.PurchaseOrderID,
+			&receipt.PurchaseOrderNumber,
+			&receipt.Supplier.ID,
+			&receipt.Supplier.Code,
+			&receipt.Supplier.Name,
+		); err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return ErrReceiptPurchaseOrderNotApproved
+			}
+			return fmt.Errorf("load approved purchase order: %w", err)
+		}
+		receipt.SupplierName = receipt.Supplier.Name
+
 		var receiptNumber string
 		if err := tx.QueryRow(ctx, `
 SELECT 'PR-' || upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 12))
@@ -235,6 +283,8 @@ RETURNING id::text, movement_number
 INSERT INTO purchase.receipts (
     tenant_id,
     receipt_number,
+    supplier_id,
+    purchase_order_id,
     supplier_name,
     reference,
     notes,
@@ -246,16 +296,18 @@ INSERT INTO purchase.receipts (
 VALUES (
     $1,
     $2,
-    $3,
-    $4,
+    $3::uuid,
+    $4::uuid,
     $5,
     $6,
+    $7,
+    $8,
     'posted',
-    $7::uuid,
-    $8::uuid
+    $9::uuid,
+    $10::uuid
 )
 RETURNING id::text, receipt_number, supplier_name, reference, notes, received_at, status, stock_movement_id::text, created_at
-`, tenantID, receiptNumber, input.SupplierName, input.Reference, input.Notes, input.ReceivedAt, stockMovementID, actorID).Scan(
+`, tenantID, receiptNumber, receipt.Supplier.ID, receipt.PurchaseOrderID, receipt.SupplierName, input.Reference, input.Notes, input.ReceivedAt, stockMovementID, actorID).Scan(
 			&receipt.ID,
 			&receipt.ReceiptNumber,
 			&receipt.SupplierName,
@@ -275,6 +327,33 @@ RETURNING id::text, receipt_number, supplier_name, reference, notes, received_at
 			inputLine.ItemID = strings.TrimSpace(inputLine.ItemID)
 			inputLine.LocationID = strings.TrimSpace(inputLine.LocationID)
 			inputLine.QuantityReceived = strings.TrimSpace(inputLine.QuantityReceived)
+
+			var quantityAllowed bool
+			if err := tx.QueryRow(ctx, `
+SELECT $3::numeric <= (
+    SUM(pol.quantity) - COALESCE((
+        SELECT SUM(rl.quantity_received)
+        FROM purchase.receipt_lines rl
+        JOIN purchase.receipts r
+            ON r.tenant_id = rl.tenant_id
+           AND r.id = rl.receipt_id
+        WHERE r.purchase_order_id = $1::uuid
+          AND rl.item_id = $2::uuid
+    ), 0)
+)
+FROM purchase.purchase_order_lines pol
+WHERE pol.purchase_order_id = $1::uuid
+  AND pol.item_id = $2::uuid
+GROUP BY pol.purchase_order_id
+`, receipt.PurchaseOrderID, inputLine.ItemID, inputLine.QuantityReceived).Scan(&quantityAllowed); err != nil {
+				if errors.Is(err, pgx.ErrNoRows) {
+					return ErrReceiptItemNotOnOrder
+				}
+				return fmt.Errorf("check purchase order remaining quantity: %w", err)
+			}
+			if !quantityAllowed {
+				return ErrReceiptQuantityExceedsRemaining
+			}
 
 			var line ReceiptLine
 			if err := tx.QueryRow(ctx, `
@@ -350,6 +429,9 @@ WHERE i.tenant_id = $1::uuid
 			TargetID:   receipt.ID,
 			Metadata: map[string]any{
 				"receipt_number":        receipt.ReceiptNumber,
+				"purchase_order_id":     receipt.PurchaseOrderID,
+				"purchase_order_number": receipt.PurchaseOrderNumber,
+				"supplier_id":           receipt.Supplier.ID,
 				"supplier_name":         receipt.SupplierName,
 				"reference":             receipt.Reference,
 				"line_count":            len(receipt.Lines),
@@ -369,6 +451,9 @@ WHERE i.tenant_id = $1::uuid
 			Payload: map[string]any{
 				"receipt_id":            receipt.ID,
 				"receipt_number":        receipt.ReceiptNumber,
+				"purchase_order_id":     receipt.PurchaseOrderID,
+				"purchase_order_number": receipt.PurchaseOrderNumber,
+				"supplier_id":           receipt.Supplier.ID,
 				"supplier_name":         receipt.SupplierName,
 				"reference":             receipt.Reference,
 				"line_count":            len(receipt.Lines),
