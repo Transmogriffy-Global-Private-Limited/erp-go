@@ -77,6 +77,11 @@ Assert-NotContains `
   -Label "direct inventory handler route"
 
 Assert-Contains `
+  -Text $Routes `
+  -Pattern 'mux\.Handle\("/api/v1/purchase/suppliers",\s*a\.erpSessionMiddleware\(a\.requireModule\("purchase",\s*http\.HandlerFunc\(a\.purchaseSuppliersHandler\)\)\)\)' `
+  -Label "purchase suppliers session and module-guarded route"
+
+Assert-Contains `
   -Text $InventorySession `
   -Pattern 'X-ERP-Session' `
   -Label "inventory session header check"

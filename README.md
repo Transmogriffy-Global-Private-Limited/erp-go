@@ -22,6 +22,7 @@ This repository currently contains the first bootable backend spine:
 - ERP-side module entitlement enforcement
 - ERP-side RBAC permission enforcement
 - first tenant-owned Inventory items API
+- tenant-owned Purchase suppliers API
 - audit and outbox writes on Inventory item creation
 - DB-backed outbox worker v1
 - master verification script
@@ -31,14 +32,13 @@ This repository currently contains the first bootable backend spine:
 Control-plane APIs require:
 
 - X-Platform-Session
-- X-Platform-Role: superadmin
 
-ERP APIs currently use:
+Protected ERP business APIs require:
 
 - X-Tenant-ID
-- X-User-ID
+- X-ERP-Session
 
-These are placeholders until real authentication is introduced.
+Session tokens are obtained through the platform or tenant login endpoints.
 
 ## Verification
 
@@ -55,6 +55,7 @@ Individual checks:
 .\scripts\verify-module-entitlement.ps1
 .\scripts\verify-audit-outbox.ps1
 .\scripts\verify-outbox-worker.ps1
+.\scripts\verify-purchase-suppliers.ps1
 
 ## Run locally
 

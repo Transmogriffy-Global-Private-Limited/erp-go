@@ -1449,3 +1449,39 @@ Updated verification:
 Next recommended step:
 
 - Add suppliers and purchase orders, or add sales issue integration into stock movements.
+
+## 2026-07-03 update
+
+Purchase Suppliers were added.
+
+New endpoints:
+
+- GET /api/v1/purchase/suppliers
+- POST /api/v1/purchase/suppliers
+
+New table:
+
+- purchase.suppliers
+
+New permissions:
+
+- purchase.supplier.read
+- purchase.supplier.write
+
+Behavior:
+
+- Supplier codes are normalized to uppercase and unique within each tenant.
+- Supplier list/create uses ERP session auth, Purchase module entitlement, and tenant-user RBAC.
+- Supplier rows use tenant-scoped transactions and PostgreSQL RLS.
+- Supplier creation writes purchase.supplier.create audit and purchase.supplier.created.v1 outbox records atomically.
+- Existing Purchase Receipts retain their free-text supplier_name contract for now.
+
+New verification:
+
+- scripts/verify-purchase-suppliers.ps1
+- scripts/verify-all.ps1 now includes Purchase suppliers verification.
+- The focused verifier covers validation, duplicate handling, RBAC, module entitlement, tenant isolation, tenant-scoped code uniqueness, audit, and outbox behavior.
+
+Next recommended step:
+
+- Add Purchase Orders linked to purchase.suppliers, with order lines that reference Inventory items but do not change stock until receipt posting.

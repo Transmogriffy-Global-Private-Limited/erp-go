@@ -15,14 +15,13 @@ Never commit .env.
 Control-plane APIs currently require:
 
 - X-Platform-Session
-- X-Platform-Role: superadmin
 
-ERP APIs currently require:
+Protected ERP business APIs currently require:
 
 - X-Tenant-ID
-- X-User-ID
+- X-ERP-Session
 
-These are placeholders until real authentication is introduced.
+Session tokens are obtained through the platform or tenant login endpoints.
 
 ## Run services
 
@@ -57,6 +56,7 @@ Individual checks:
 .\scripts\verify-rbac.ps1
 .\scripts\verify-audit-outbox.ps1
 .\scripts\verify-outbox-worker.ps1
+.\scripts\verify-purchase-suppliers.ps1
 
 ## Database URLs
 

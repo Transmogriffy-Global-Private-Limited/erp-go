@@ -1660,3 +1660,50 @@ Behavior:
 Reason:
 
 - Purchased goods must enter inventory through the stock ledger before purchase orders, suppliers, payables, and accounting integration can be modeled safely.
+
+## 2026-07-03
+
+### Added Purchase Suppliers
+
+Added:
+
+- migrations/000013_purchase_suppliers.up.sql
+- migrations/000013_purchase_suppliers.down.sql
+- internal/modules/purchase/suppliers.go
+- cmd/erp-api/purchase_suppliers_handlers.go
+- scripts/verify-purchase-suppliers.ps1
+- docs/decisions/0039-purchase-suppliers.md
+
+Updated:
+
+- cmd/erp-api/routes.go
+- manifests/purchase.module.yaml
+- scripts/seed-dev-rbac.ps1
+- scripts/verify-erp-route-wiring.ps1
+- scripts/verify-all.ps1
+- README.md
+- docs/NATIVE_LOCAL_DEV.md
+- docs/PROJECT_STATE.md
+- docs/AI_CHANGELOG.md
+
+Behavior:
+
+- GET /api/v1/purchase/suppliers lists tenant suppliers.
+- POST /api/v1/purchase/suppliers creates tenant suppliers.
+- Supplier codes are normalized to uppercase and unique per tenant.
+- Duplicate supplier codes return HTTP 409 with supplier_code_exists.
+- Supplier APIs require ERP sessions, Purchase entitlement, and purchase.supplier RBAC permissions.
+- Supplier creation writes audit and outbox records in the same tenant-scoped transaction.
+- The focused verifier proves tenant isolation and allows the same supplier code in different tenants.
+- README and native-development identity notes now reflect platform and ERP session headers.
+
+Reason:
+
+- Purchase Orders and later payable workflows need stable tenant-owned supplier master data.
+
+Current next step:
+
+- Apply migration 000013_purchase_suppliers.
+- Restart local APIs.
+- Run scripts/verify-purchase-suppliers.ps1.
+- Run scripts/verify-all.ps1.

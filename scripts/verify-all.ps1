@@ -113,6 +113,13 @@ Invoke-Step -Name "Inventory stock verification" -Action {
     -EnvFile $EnvFile
 }
 
+Invoke-Step -Name "Purchase suppliers verification" -Action {
+  & (Join-Path $PSScriptRoot "verify-purchase-suppliers.ps1") `
+    -BaseUrl $BaseUrl `
+    -ControlPlaneUrl $ControlPlaneUrl `
+    -EnvFile $EnvFile
+}
+
 Invoke-Step -Name "Purchase receipts verification" -Action {
   & (Join-Path $PSScriptRoot "verify-purchase-receipts.ps1") `
     -BaseUrl $BaseUrl `
