@@ -57,6 +57,7 @@ Individual checks:
 .\scripts\verify-audit-outbox.ps1
 .\scripts\verify-outbox-worker.ps1
 .\scripts\verify-purchase-suppliers.ps1
+.\scripts\verify-purchase-orders.ps1
 
 ## Database URLs
 

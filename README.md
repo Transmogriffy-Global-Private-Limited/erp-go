@@ -23,6 +23,7 @@ This repository currently contains the first bootable backend spine:
 - ERP-side RBAC permission enforcement
 - first tenant-owned Inventory items API
 - tenant-owned Purchase suppliers API
+- tenant-owned Purchase Order lifecycle API
 - audit and outbox writes on Inventory item creation
 - DB-backed outbox worker v1
 - master verification script
@@ -56,6 +57,7 @@ Individual checks:
 .\scripts\verify-audit-outbox.ps1
 .\scripts\verify-outbox-worker.ps1
 .\scripts\verify-purchase-suppliers.ps1
+.\scripts\verify-purchase-orders.ps1
 
 ## Run locally
 

@@ -1485,3 +1485,37 @@ New verification:
 Next recommended step:
 
 - Add Purchase Orders linked to purchase.suppliers, with order lines that reference Inventory items but do not change stock until receipt posting.
+
+## 2026-07-03 update
+
+Purchase Orders were added.
+
+New endpoints:
+
+- GET /api/v1/purchase/orders
+- POST /api/v1/purchase/orders
+- POST /api/v1/purchase/orders/{purchase_order_id}/approve
+
+New tables:
+
+- purchase.purchase_orders
+- purchase.purchase_order_lines
+
+Behavior:
+
+- Orders reference active tenant suppliers and active tenant Inventory items.
+- Orders are created as draft and can transition once to approved.
+- Quantities must be positive; unit prices must be non-negative.
+- Currency codes are normalized and validated as three uppercase letters.
+- Create and approve write audit/outbox records atomically.
+- Draft and approved orders do not create stock movements.
+
+New verification:
+
+- scripts/verify-purchase-orders.ps1
+- scripts/verify-all.ps1 now includes Purchase Order verification.
+- The worker runner now returns normally on success so verify-all can complete its final outbox and suite assertions.
+
+Next recommended step:
+
+- Link Purchase Receipts to approved Purchase Orders and enforce supplier/item/order consistency while keeping Inventory stock posting inside the receipt transaction.

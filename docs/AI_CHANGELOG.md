@@ -1707,3 +1707,42 @@ Current next step:
 - Restart local APIs.
 - Run scripts/verify-purchase-suppliers.ps1.
 - Run scripts/verify-all.ps1.
+
+## 2026-07-03
+
+### Added Purchase Orders
+
+Added:
+
+- migrations/000014_purchase_orders.up.sql
+- migrations/000014_purchase_orders.down.sql
+- internal/modules/purchase/orders.go
+- cmd/erp-api/purchase_orders_handlers.go
+- scripts/verify-purchase-orders.ps1
+- docs/decisions/0040-purchase-orders.md
+
+Updated:
+
+- cmd/erp-api/routes.go
+- manifests/purchase.module.yaml
+- scripts/seed-dev-rbac.ps1
+- scripts/verify-erp-route-wiring.ps1
+- scripts/verify-all.ps1
+- docs/PROJECT_STATE.md
+- docs/AI_CHANGELOG.md
+
+Behavior:
+
+- Purchase Orders can be listed, created as drafts, and approved.
+- Orders reference tenant suppliers and Inventory items through tenant-safe foreign keys.
+- Approval is a one-way draft-to-approved transition.
+- Create and approve write audit and outbox records atomically.
+- Purchase Orders do not mutate Inventory stock.
+- Focused verification covers validation, RBAC, tenant isolation, lifecycle conflicts, audit/outbox, and absence of stock movements.
+- Fixed run-erp-worker.ps1 so successful worker execution returns to its caller instead of terminating verify-all.ps1 early.
+
+Current next step:
+
+- Apply migration 000014_purchase_orders.
+- Run scripts/verify-purchase-orders.ps1.
+- Run scripts/verify-all.ps1.

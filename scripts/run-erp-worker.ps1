@@ -21,4 +21,8 @@ $Args += "-limit"
 $Args += "$Limit"
 
 go run ./cmd/erp-worker @Args
-exit $LASTEXITCODE
+$WorkerExitCode = $LASTEXITCODE
+
+if ($WorkerExitCode -ne 0) {
+  throw "ERP worker failed with exit code $WorkerExitCode."
+}

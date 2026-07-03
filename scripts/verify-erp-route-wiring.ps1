@@ -82,6 +82,16 @@ Assert-Contains `
   -Label "purchase suppliers session and module-guarded route"
 
 Assert-Contains `
+  -Text $Routes `
+  -Pattern 'mux\.Handle\("/api/v1/purchase/orders",\s*a\.erpSessionMiddleware\(a\.requireModule\("purchase",\s*http\.HandlerFunc\(a\.purchaseOrdersHandler\)\)\)\)' `
+  -Label "purchase orders session and module-guarded route"
+
+Assert-Contains `
+  -Text $Routes `
+  -Pattern 'mux\.Handle\("/api/v1/purchase/orders/",\s*a\.erpSessionMiddleware\(a\.requireModule\("purchase",\s*http\.HandlerFunc\(a\.purchaseOrderActionHandler\)\)\)\)' `
+  -Label "purchase order actions session and module-guarded route"
+
+Assert-Contains `
   -Text $InventorySession `
   -Pattern 'X-ERP-Session' `
   -Label "inventory session header check"

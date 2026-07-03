@@ -48,6 +48,10 @@ api:
       path: /api/v1/purchase/orders
       permission: purchase.order.create
 
+    - method: POST
+      path: /api/v1/purchase/orders/{purchase_order_id}/approve
+      permission: purchase.order.approve
+
 database:
   schema: purchase
   owns_tables:
@@ -55,7 +59,7 @@ database:
     - purchase.receipts
     - purchase.receipt_lines
     - purchase.purchase_orders
-    - purchase.purchase_order_items
+    - purchase.purchase_order_lines
     - purchase.grns
 
 events:
