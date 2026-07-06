@@ -39,12 +39,16 @@ api:
       path: /api/v1/sales/orders
       permission: sales.order.create
 
+    - method: POST
+      path: /api/v1/sales/orders/{sales_order_id}/confirm
+      permission: sales.order.approve
+
 database:
   schema: sales
   owns_tables:
     - sales.customers
     - sales.orders
-    - sales.order_items
+    - sales.order_lines
     - sales.invoices
 
 events:

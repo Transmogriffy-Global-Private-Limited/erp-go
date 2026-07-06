@@ -102,6 +102,16 @@ Assert-Contains `
   -Label "sales customers session and module-guarded route"
 
 Assert-Contains `
+  -Text $Routes `
+  -Pattern 'mux\.Handle\("/api/v1/sales/orders",\s*a\.erpSessionMiddleware\(a\.requireModule\("sales",\s*http\.HandlerFunc\(a\.salesOrdersHandler\)\)\)\)' `
+  -Label "sales orders session and module-guarded route"
+
+Assert-Contains `
+  -Text $Routes `
+  -Pattern 'mux\.Handle\("/api/v1/sales/orders/",\s*a\.erpSessionMiddleware\(a\.requireModule\("sales",\s*http\.HandlerFunc\(a\.salesOrderActionHandler\)\)\)\)' `
+  -Label "sales order actions session and module-guarded route"
+
+Assert-Contains `
   -Text $InventorySession `
   -Pattern 'X-ERP-Session' `
   -Label "inventory session header check"

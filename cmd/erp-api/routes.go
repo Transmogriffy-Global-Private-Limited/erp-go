@@ -22,6 +22,8 @@ func (a *app) routes() http.Handler {
 	mux.Handle("/api/v1/purchase/receipts", a.erpSessionMiddleware(a.requireModule("purchase", http.HandlerFunc(a.purchaseReceiptsHandler))))
 	mux.Handle("/api/v1/purchase/receipts/", a.erpSessionMiddleware(a.requireModule("purchase", http.HandlerFunc(a.purchaseReceiptActionHandler))))
 	mux.Handle("/api/v1/sales/customers", a.erpSessionMiddleware(a.requireModule("sales", http.HandlerFunc(a.salesCustomersHandler))))
+	mux.Handle("/api/v1/sales/orders", a.erpSessionMiddleware(a.requireModule("sales", http.HandlerFunc(a.salesOrdersHandler))))
+	mux.Handle("/api/v1/sales/orders/", a.erpSessionMiddleware(a.requireModule("sales", http.HandlerFunc(a.salesOrderActionHandler))))
 
 	return mux
 }

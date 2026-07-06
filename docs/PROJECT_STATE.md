@@ -1662,3 +1662,42 @@ Agent workflow update:
 Next recommended step:
 
 - Add Sales Orders linked to Sales Customers and Inventory items, with draft/confirmed lifecycle and no stock mutation until fulfillment.
+
+## 2026-07-06 update — Sales Orders
+
+Sales Orders were added.
+
+New endpoints:
+
+- GET /api/v1/sales/orders
+- POST /api/v1/sales/orders
+- POST /api/v1/sales/orders/{sales_order_id}/confirm
+
+New tables:
+
+- sales.orders
+- sales.order_lines
+
+New permissions:
+
+- sales.order.read
+- sales.order.create
+- sales.order.approve
+
+Behavior:
+
+- Orders reference an active tenant Sales Customer and active tenant Inventory items.
+- Orders begin in draft and may be confirmed once.
+- Duplicate item lines and invalid quantities or prices are rejected.
+- Draft creation and confirmation write audit and outbox records atomically.
+- Neither creation nor confirmation writes Inventory stock movements.
+
+New verification:
+
+- scripts/verify-sales-orders.ps1
+- scripts/verify-all.ps1 now includes Sales Order verification.
+- The focused verifier covers validation, RBAC, tenant isolation, lifecycle conflicts, audit, outbox, and the no-stock-mutation boundary.
+
+Next recommended step:
+
+- Add posted Sales Issues that create negative Inventory movements with stock-availability checks and partial Sales Order fulfillment.

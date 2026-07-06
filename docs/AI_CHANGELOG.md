@@ -1914,3 +1914,42 @@ Current next step:
 - Restart the APIs.
 - Run scripts/verify-sales-customers.ps1.
 - Run scripts/verify-all.ps1.
+
+## 2026-07-06
+
+### Added Sales Orders
+
+Added:
+
+- migrations/000019_sales_orders.up.sql
+- migrations/000019_sales_orders.down.sql
+- internal/modules/sales/orders.go
+- cmd/erp-api/sales_orders_handlers.go
+- scripts/verify-sales-orders.ps1
+- docs/decisions/0045-sales-orders.md
+
+Updated:
+
+- cmd/erp-api/routes.go
+- manifests/sales.module.yaml
+- scripts/seed-dev-rbac.ps1
+- scripts/verify-erp-route-wiring.ps1
+- scripts/verify-all.ps1
+- README.md
+- docs/NATIVE_LOCAL_DEV.md
+- docs/PROJECT_STATE.md
+- docs/AI_CHANGELOG.md
+
+Behavior:
+
+- Sales Orders can be listed, created as drafts, and confirmed once.
+- Orders reference tenant Sales Customers and Inventory items without directly writing Inventory tables.
+- Creation and confirmation write audit and outbox records atomically.
+- Focused verification covers validation, tenant isolation, RBAC, lifecycle conflicts, audit/outbox records, and absence of stock mutation.
+
+Current next step:
+
+- Apply migration 000019_sales_orders.
+- Restart the APIs.
+- Run scripts/verify-sales-orders.ps1.
+- Run scripts/verify-all.ps1.

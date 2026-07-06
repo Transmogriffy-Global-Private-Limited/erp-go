@@ -108,7 +108,10 @@ VALUES
     ('$TenantID', '$AllowedRoleID', 'purchase.receipt.write'),
     ('$TenantID', '$AllowedRoleID', 'purchase.receipt.reverse'),
     ('$TenantID', '$AllowedRoleID', 'sales.customer.read'),
-    ('$TenantID', '$AllowedRoleID', 'sales.customer.write')
+    ('$TenantID', '$AllowedRoleID', 'sales.customer.write'),
+    ('$TenantID', '$AllowedRoleID', 'sales.order.read'),
+    ('$TenantID', '$AllowedRoleID', 'sales.order.create'),
+    ('$TenantID', '$AllowedRoleID', 'sales.order.approve')
 ON CONFLICT (tenant_id, role_id, permission_id) DO NOTHING;
 
 INSERT INTO core.user_roles (
