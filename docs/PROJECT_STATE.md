@@ -1780,3 +1780,36 @@ Updated verification:
 Next recommended step:
 
 - Add Inventory transfers between locations using balanced, atomic movement pairs.
+
+## 2026-07-06 update — Inventory v1 closeout (Steps 48–52)
+
+Inventory v1 was completed across five slices.
+
+Step 48 added balanced, atomic transfers between active tenant locations with source availability enforcement.
+
+Step 49 added posted physical stock counts whose variances append adjustment movements.
+
+Step 50 added reservations, explicit release, and available-to-promise projections. Active reservations protect stock from Sales Issues and transfers.
+
+Step 51 added append-only item cost layers and latest-effective stock valuation.
+
+Step 52 added consolidated summary and stock-ledger reports, reconciled the module manifest, declared locations as the v1 stock-node abstraction, and restricted direct stock movement creation to adjustments.
+
+New migrations:
+
+- migrations/000022_inventory_transfers
+- migrations/000023_inventory_stock_counts
+- migrations/000024_inventory_reservations
+- migrations/000025_inventory_cost_layers
+- migrations/000026_inventory_v1_closeout
+
+New focused verification:
+
+- scripts/verify-inventory-v1.ps1
+- scripts/verify-all.ps1 now includes Inventory v1 closeout verification.
+
+Inventory v1 now covers master data, append-only on-hand truth, Purchase inbound, Sales outbound, compensating reversals, internal transfers, physical counts, reservations/ATP, cost history, valuation, and operational reports.
+
+Next recommended step:
+
+- Add Sales Invoices backed by fulfilled Sales Orders and explicit Accounting commands/events.

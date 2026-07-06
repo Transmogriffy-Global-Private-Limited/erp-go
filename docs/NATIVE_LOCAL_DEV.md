@@ -61,6 +61,7 @@ Individual checks:
 .\scripts\verify-sales-customers.ps1
 .\scripts\verify-sales-orders.ps1
 .\scripts\verify-sales-issues.ps1
+.\scripts\verify-inventory-v1.ps1
 
 ## Database URLs
 

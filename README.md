@@ -31,6 +31,7 @@ This repository currently contains the first bootable backend spine:
 - tenant-owned Sales Orders with draft and confirmed lifecycle
 - posted Sales Issues with stock availability and fulfillment progress
 - compensating Sales Issue reversal with order-progress reopening
+- Inventory transfers, stock counts, reservations, ATP, cost history, valuation, and reports
 - audit and outbox writes on Inventory item creation
 - DB-backed outbox worker v1
 - master verification script
@@ -68,6 +69,7 @@ Individual checks:
 .\scripts\verify-sales-customers.ps1
 .\scripts\verify-sales-orders.ps1
 .\scripts\verify-sales-issues.ps1
+.\scripts\verify-inventory-v1.ps1
 
 ## Run locally
 

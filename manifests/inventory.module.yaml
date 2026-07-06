@@ -1,7 +1,7 @@
 module_id: inventory
 name: Inventory
 version: 0.1.0
-status: planned
+status: active
 
 depends_on:
   - core
@@ -12,10 +12,22 @@ depends_on:
 permissions:
   - inventory.item.read
   - inventory.item.write
-  - inventory.stock.read
-  - inventory.stock.adjust
-  - inventory.stock.transfer
-  - inventory.stock.count
+  - inventory.unit.read
+  - inventory.unit.write
+  - inventory.location.read
+  - inventory.location.write
+  - inventory.stock_movement.read
+  - inventory.stock_movement.write
+  - inventory.stock_balance.read
+  - inventory.transfer.read
+  - inventory.transfer.write
+  - inventory.stock_count.read
+  - inventory.stock_count.write
+  - inventory.reservation.read
+  - inventory.reservation.write
+  - inventory.cost.read
+  - inventory.cost.write
+  - inventory.report.read
 
 api:
   routes:
@@ -27,32 +39,99 @@ api:
       path: /api/v1/inventory/items
       permission: inventory.item.write
 
+    - method: GET
+      path: /api/v1/inventory/units
+      permission: inventory.unit.read
+    - method: POST
+      path: /api/v1/inventory/units
+      permission: inventory.unit.write
+    - method: GET
+      path: /api/v1/inventory/locations
+      permission: inventory.location.read
+    - method: POST
+      path: /api/v1/inventory/locations
+      permission: inventory.location.write
+    - method: GET
+      path: /api/v1/inventory/stock-movements
+      permission: inventory.stock_movement.read
+    - method: POST
+      path: /api/v1/inventory/stock-movements
+      permission: inventory.stock_movement.write
+    - method: GET
+      path: /api/v1/inventory/stock-balances
+      permission: inventory.stock_balance.read
+
+    - method: GET
+      path: /api/v1/inventory/transfers
+      permission: inventory.transfer.read
+    - method: POST
+      path: /api/v1/inventory/transfers
+      permission: inventory.transfer.write
+    - method: GET
+      path: /api/v1/inventory/stock-counts
+      permission: inventory.stock_count.read
+    - method: POST
+      path: /api/v1/inventory/stock-counts
+      permission: inventory.stock_count.write
+    - method: GET
+      path: /api/v1/inventory/reservations
+      permission: inventory.reservation.read
+    - method: POST
+      path: /api/v1/inventory/reservations
+      permission: inventory.reservation.write
+    - method: POST
+      path: /api/v1/inventory/reservations/{reservation_id}/release
+      permission: inventory.reservation.write
+    - method: GET
+      path: /api/v1/inventory/availability
+      permission: inventory.reservation.read
+    - method: GET
+      path: /api/v1/inventory/cost-layers
+      permission: inventory.cost.read
+    - method: POST
+      path: /api/v1/inventory/cost-layers
+      permission: inventory.cost.write
+    - method: GET
+      path: /api/v1/inventory/reports/valuation
+      permission: inventory.cost.read
+    - method: GET
+      path: /api/v1/inventory/reports/summary
+      permission: inventory.report.read
+    - method: GET
+      path: /api/v1/inventory/reports/stock-ledger
+      permission: inventory.report.read
+
 database:
   schema: inventory
   owns_tables:
     - inventory.items
-    - inventory.warehouses
+    - inventory.units
+    - inventory.locations
     - inventory.stock_movements
-    - inventory.stock_balances
+    - inventory.stock_movement_lines
+    - inventory.transfers
+    - inventory.transfer_lines
+    - inventory.stock_counts
+    - inventory.stock_count_lines
+    - inventory.reservations
+    - inventory.cost_layers
 
 events:
   publishes:
     - inventory.item.created.v1
     - inventory.stock_movement.created.v1
-    - inventory.stock.changed.v1
     - inventory.stock.reserved.v1
     - inventory.stock.released.v1
+    - inventory.transfer.posted.v1
+    - inventory.stock_count.posted.v1
+    - inventory.cost.changed.v1
 
-  subscribes:
-    - sales.order.confirmed.v1
-    - sales.order.cancelled.v1
-    - purchase.grn.posted.v1
+  subscribes: []
 
 files:
-  attachment_types:
-    - item_image
-    - stock_count_evidence
+  attachment_types: []
 
 reports:
   - stock_ledger
   - stock_valuation
+  - inventory_summary

@@ -64,8 +64,8 @@ func (a *app) createInventoryStockMovement(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if input.MovementType != "adjustment" && input.MovementType != "receipt" && input.MovementType != "issue" && input.MovementType != "transfer" {
-		httpx.Error(w, http.StatusBadRequest, "invalid_movement_type", "movement_type must be adjustment, receipt, issue, or transfer")
+	if input.MovementType != "adjustment" {
+		httpx.Error(w, http.StatusBadRequest, "invalid_movement_type", "direct stock movements must use adjustment; receipts, issues, and transfers use their owning document APIs")
 		return
 	}
 

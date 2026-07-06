@@ -121,6 +121,23 @@ Assert-Contains `
   -Pattern 'mux\.Handle\("/api/v1/sales/issues/",\s*a\.erpSessionMiddleware\(a\.requireModule\("sales",\s*http\.HandlerFunc\(a\.salesIssueActionHandler\)\)\)\)' `
   -Label "sales issue actions session and module-guarded route"
 
+foreach ($InventoryRoute in @(
+  @{ Path = "transfers"; Handler = "inventoryTransfersHandler"; Label = "inventory transfers" },
+  @{ Path = "stock-counts"; Handler = "inventoryStockCountsHandler"; Label = "inventory stock counts" },
+  @{ Path = "reservations"; Handler = "inventoryReservationsHandler"; Label = "inventory reservations" },
+  @{ Path = "reservations/"; Handler = "inventoryReservationActionHandler"; Label = "inventory reservation actions" },
+  @{ Path = "availability"; Handler = "inventoryAvailabilityHandler"; Label = "inventory availability" },
+  @{ Path = "cost-layers"; Handler = "inventoryCostLayersHandler"; Label = "inventory cost layers" },
+  @{ Path = "reports/valuation"; Handler = "inventoryValuationReportHandler"; Label = "inventory valuation report" },
+  @{ Path = "reports/summary"; Handler = "inventorySummaryReportHandler"; Label = "inventory summary report" },
+  @{ Path = "reports/stock-ledger"; Handler = "inventoryLedgerReportHandler"; Label = "inventory stock ledger report" }
+)) {
+  Assert-Contains `
+    -Text $Routes `
+    -Pattern ('mux\.Handle\("/api/v1/inventory/' + [regex]::Escape($InventoryRoute.Path) + '",\s*a\.erpSessionMiddleware\(a\.requireModule\("inventory",\s*http\.HandlerFunc\(a\.' + $InventoryRoute.Handler + '\)\)\)\)') `
+    -Label ($InventoryRoute.Label + " session and module-guarded route")
+}
+
 Assert-Contains `
   -Text $InventorySession `
   -Pattern 'X-ERP-Session' `

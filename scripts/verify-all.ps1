@@ -139,6 +139,12 @@ Invoke-Step -Name "Sales customers verification" -Action {
     -ControlPlaneUrl $ControlPlaneUrl `
     -EnvFile $EnvFile
 }
+Invoke-Step -Name "Inventory v1 closeout verification" -Action {
+  & (Join-Path $PSScriptRoot "verify-inventory-v1.ps1") `
+    -BaseUrl $BaseUrl `
+    -ControlPlaneUrl $ControlPlaneUrl `
+    -EnvFile $EnvFile
+}
 Invoke-Step -Name "Sales orders verification" -Action {
   & (Join-Path $PSScriptRoot "verify-sales-orders.ps1") `
     -BaseUrl $BaseUrl `

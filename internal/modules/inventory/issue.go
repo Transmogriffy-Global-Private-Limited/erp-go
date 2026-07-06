@@ -85,10 +85,10 @@ WHERE i.id = $1::uuid
 
 		var available bool
 		if err := tx.QueryRow(ctx, `
-SELECT $3::numeric <= COALESCE(SUM(quantity_delta), 0)
-FROM inventory.stock_movement_lines
-WHERE item_id = $1::uuid
-  AND location_id = $2::uuid
+SELECT $3::numeric <= (
+  COALESCE((SELECT SUM(quantity_delta) FROM inventory.stock_movement_lines WHERE item_id=$1::uuid AND location_id=$2::uuid), 0)
+  - COALESCE((SELECT SUM(quantity) FROM inventory.reservations WHERE item_id=$1::uuid AND location_id=$2::uuid AND status='active' AND (expires_at IS NULL OR expires_at > now())), 0)
+)
 `, inputLine.ItemID, inputLine.LocationID, inputLine.Quantity).Scan(&available); err != nil {
 			return StockMovement{}, fmt.Errorf("check issue stock availability: %w", err)
 		}

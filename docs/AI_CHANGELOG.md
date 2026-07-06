@@ -2040,3 +2040,40 @@ Current next step:
 - Restart the APIs.
 - Run scripts/verify-sales-issues.ps1.
 - Run scripts/verify-all.ps1.
+
+## 2026-07-06
+
+### Completed Inventory v1 — Steps 48–52
+
+Added:
+
+- migrations/000022_inventory_transfers
+- migrations/000023_inventory_stock_counts
+- migrations/000024_inventory_reservations
+- migrations/000025_inventory_cost_layers
+- migrations/000026_inventory_v1_closeout
+- Inventory transfer, stock count, reservation, costing, valuation, summary, and ledger APIs
+- scripts/verify-inventory-v1.ps1
+- ADRs 0048 through 0052
+
+Updated:
+
+- Inventory RBAC seed, routes, route guard, module manifest, package documentation, README, native-development guide, project state, changelog, and verify-all integration
+- Sales Issue and transfer availability now subtract active, unexpired reservations
+- Direct stock movement creation now accepts adjustments only
+
+Behavior:
+
+- Transfers create balanced source/destination movement pairs.
+- Counts append physical variances.
+- Reservations change ATP without changing on-hand stock and can be released once.
+- Cost layers are append-only and drive latest-effective valuation.
+- Reports expose location valuation, item summary, and stock ledger.
+- The Inventory manifest is active and aligned with the implemented location-based v1 model.
+
+Current next step:
+
+- Apply migrations 000022 through 000025.
+- Restart the APIs.
+- Run scripts/verify-inventory-v1.ps1.
+- Run scripts/verify-all.ps1.
