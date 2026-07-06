@@ -1578,3 +1578,47 @@ Updated verification:
 Next recommended step:
 
 - Add Purchase Receipt reversal using compensating Inventory movements and Purchase Order progress recalculation.
+
+## 2026-07-06 update
+
+Purchase Receipt reversal was added.
+
+New endpoint:
+
+- POST /api/v1/purchase/receipts/{receipt_id}/reverse
+
+New permission:
+
+- purchase.receipt.reverse
+
+New migration:
+
+- migrations/000017_purchase_receipt_reversal
+
+Behavior:
+
+- Reversal requires a reason and a posted tenant receipt.
+- Reversal creates a receipt_reversal Inventory movement with negative lines.
+- Original receipts and stock movements remain immutable.
+- Reversed receipts are excluded from Purchase Order progress.
+- Purchase Orders reopen to partially_received or approved as appropriate.
+- Repeated reversal returns a conflict.
+- Receipt and Purchase Order lifecycle changes write audit/outbox records atomically.
+
+New events:
+
+- purchase.receipt.reversed.v1
+- purchase.order.receipt_progress_reopened.v1
+
+Updated verification:
+
+- scripts/verify-purchase-receipts.ps1 checks reason enforcement, RBAC, compensating stock, repeat conflicts, order reopening, and audit/outbox records.
+- scripts/verify-erp-route-wiring.ps1 guards the reversal route.
+
+Follow-up fix:
+
+- Purchase Order received and remaining projections now always serialize with three decimal places, including zero after all receipts are reversed.
+
+Next recommended step:
+
+- Add Sales Orders and posted Sales Issues that create negative Inventory stock movements.

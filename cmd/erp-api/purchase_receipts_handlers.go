@@ -32,6 +32,64 @@ func (a *app) purchaseReceiptsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type reversePurchaseReceiptInput struct {
+	Reason string `json:"reason"`
+}
+
+func (a *app) purchaseReceiptActionHandler(w http.ResponseWriter, r *http.Request) {
+	const prefix = "/api/v1/purchase/receipts/"
+	rest := strings.Trim(strings.TrimPrefix(r.URL.Path, prefix), "/")
+	parts := strings.Split(rest, "/")
+	if len(parts) != 2 || !looksLikeUUID(parts[0]) || parts[1] != "reverse" {
+		http.NotFound(w, r)
+		return
+	}
+
+	if r.Method != http.MethodPost {
+		httpx.MethodNotAllowed(w, http.MethodPost)
+		return
+	}
+	if !a.requirePermission(w, r, "purchase.receipt.reverse") {
+		return
+	}
+
+	var input reversePurchaseReceiptInput
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		httpx.Error(w, http.StatusBadRequest, "invalid_json", "request body must be valid JSON")
+		return
+	}
+	input.Reason = strings.TrimSpace(input.Reason)
+	if input.Reason == "" {
+		httpx.Error(w, http.StatusBadRequest, "reversal_reason_required", "reason is required")
+		return
+	}
+
+	tenantID, _ := tenancy.TenantIDFromContext(r.Context())
+	userID, _ := auth.UserIDFromContext(r.Context())
+	receipt, err := a.purchase.ReverseReceipt(r.Context(), tenantID, userID, parts[0], input.Reason)
+	if errors.Is(err, purchase.ErrReceiptNotFound) {
+		httpx.Error(w, http.StatusNotFound, "purchase_receipt_not_found", "purchase receipt not found")
+		return
+	}
+	if errors.Is(err, purchase.ErrReceiptAlreadyReversed) {
+		httpx.Error(w, http.StatusConflict, "purchase_receipt_already_reversed", "purchase receipt is already reversed")
+		return
+	}
+	if errors.Is(err, purchase.ErrReceiptNotReversible) {
+		httpx.Error(w, http.StatusConflict, "purchase_receipt_not_reversible", "purchase receipt is not reversible")
+		return
+	}
+	if err != nil {
+		httpx.Error(w, http.StatusInternalServerError, "purchase_receipt_reverse_failed", "failed to reverse purchase receipt")
+		return
+	}
+
+	httpx.JSON(w, http.StatusOK, map[string]any{
+		"tenant_id": tenantID,
+		"receipt":   receipt,
+	})
+}
+
 func (a *app) listPurchaseReceipts(w http.ResponseWriter, r *http.Request) {
 	tenantID, _ := tenancy.TenantIDFromContext(r.Context())
 

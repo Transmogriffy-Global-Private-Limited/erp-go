@@ -1821,3 +1821,49 @@ Current next step:
 - Run scripts/verify-purchase-orders.ps1.
 - Run scripts/verify-purchase-receipts.ps1.
 - Run scripts/verify-all.ps1.
+
+## 2026-07-06
+
+### Added Purchase Receipt Reversal
+
+Added:
+
+- migrations/000017_purchase_receipt_reversal.up.sql
+- migrations/000017_purchase_receipt_reversal.down.sql
+- internal/modules/purchase/reversals.go
+- docs/decisions/0043-purchase-receipt-reversal.md
+
+Updated:
+
+- internal/modules/purchase/receipts.go
+- internal/modules/purchase/orders.go
+- cmd/erp-api/purchase_receipts_handlers.go
+- cmd/erp-api/routes.go
+- manifests/purchase.module.yaml
+- scripts/seed-dev-rbac.ps1
+- scripts/verify-purchase-receipts.ps1
+- scripts/verify-erp-route-wiring.ps1
+- README.md
+- docs/PROJECT_STATE.md
+- docs/AI_CHANGELOG.md
+
+Behavior:
+
+- Posted receipts can be reversed once with a required reason.
+- Reversal appends a compensating receipt_reversal Inventory movement.
+- Original receipt and stock ledger facts remain intact.
+- Reversed receipts no longer contribute to Purchase Order receipt progress.
+- Purchase Orders reopen as partially_received or approved.
+- Reversal and reopening write tenant audit and outbox records atomically.
+
+Follow-up fix:
+
+- Cast derived Purchase Order received_quantity and remaining_quantity values to NUMERIC(18, 3) before text serialization.
+- This preserves the API quantity contract as 0.000 instead of 0 after all receipts are reversed.
+
+Current next step:
+
+- Apply migration 000017_purchase_receipt_reversal.
+- Restart the APIs.
+- Run scripts/verify-purchase-receipts.ps1.
+- Run scripts/verify-all.ps1.

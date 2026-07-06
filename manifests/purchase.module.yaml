@@ -16,6 +16,7 @@ permissions:
   - purchase.supplier.write
   - purchase.receipt.read
   - purchase.receipt.write
+  - purchase.receipt.reverse
   - purchase.order.read
   - purchase.order.create
   - purchase.order.approve
@@ -39,6 +40,10 @@ api:
     - method: POST
       path: /api/v1/purchase/receipts
       permission: purchase.receipt.write
+
+    - method: POST
+      path: /api/v1/purchase/receipts/{receipt_id}/reverse
+      permission: purchase.receipt.reverse
 
     - method: GET
       path: /api/v1/purchase/orders
@@ -66,10 +71,12 @@ events:
   publishes:
     - purchase.supplier.created.v1
     - purchase.receipt.created.v1
+    - purchase.receipt.reversed.v1
     - purchase.order.created.v1
     - purchase.order.approved.v1
     - purchase.order.partially_received.v1
     - purchase.order.received.v1
+    - purchase.order.receipt_progress_reopened.v1
     - purchase.grn.posted.v1
 
   subscribes:

@@ -373,11 +373,11 @@ $RemainingReceiptBody = @{
   )
 } | ConvertTo-Json -Depth 10
 
-Invoke-RestMethod "$BaseUrl/api/v1/purchase/receipts" `
+$RemainingReceipt = Invoke-RestMethod "$BaseUrl/api/v1/purchase/receipts" `
   -Method Post `
   -ContentType "application/json" `
   -Headers $Headers `
-  -Body $RemainingReceiptBody | Out-Null
+  -Body $RemainingReceiptBody
 
 $FinalBalances = Invoke-RestMethod "$BaseUrl/api/v1/inventory/stock-balances" -Headers $Headers
 $FinalBalance = @($FinalBalances.balances | Where-Object { $_.item_id -eq $Item.item.id -and $_.location_id -eq $Location.location.id }) | Select-Object -First 1
@@ -398,6 +398,113 @@ if ($ReceivedOrder.lines[0].received_quantity -ne "10.000") {
 }
 if ($ReceivedOrder.lines[0].remaining_quantity -ne "0.000") {
   throw "Expected final remaining_quantity 0.000."
+}
+
+Write-Host ""
+Write-Host "Verifying receipt reversal requires a reason..."
+$MissingReasonResponse = Invoke-WebRequest "$BaseUrl/api/v1/purchase/receipts/$($RemainingReceipt.receipt.id)/reverse" `
+  -Method Post `
+  -ContentType "application/json" `
+  -Headers $Headers `
+  -Body (@{ reason = "" } | ConvertTo-Json) `
+  -SkipHttpErrorCheck
+if ($MissingReasonResponse.StatusCode -ne 400) {
+  throw "Expected missing reversal reason to return 400."
+}
+$MissingReasonError = $MissingReasonResponse.Content | ConvertFrom-Json
+if ($MissingReasonError.error.code -ne "reversal_reason_required") {
+  throw "Expected reversal_reason_required."
+}
+
+Write-Host "Verifying no-access user cannot reverse a receipt..."
+$DeniedReverseResponse = Invoke-WebRequest "$BaseUrl/api/v1/purchase/receipts/$($RemainingReceipt.receipt.id)/reverse" `
+  -Method Post `
+  -ContentType "application/json" `
+  -Headers $NoAccessHeaders `
+  -Body (@{ reason = "Denied reversal" } | ConvertTo-Json) `
+  -SkipHttpErrorCheck
+if ($DeniedReverseResponse.StatusCode -ne 403) {
+  throw "Expected no-access reversal to return 403."
+}
+
+Write-Host "Reversing final partial receipt..."
+$ReversedRemaining = Invoke-RestMethod "$BaseUrl/api/v1/purchase/receipts/$($RemainingReceipt.receipt.id)/reverse" `
+  -Method Post `
+  -ContentType "application/json" `
+  -Headers $Headers `
+  -Body (@{ reason = "Verification reversal of remaining receipt" } | ConvertTo-Json)
+if ($ReversedRemaining.receipt.status -ne "reversed") {
+  throw "Expected reversed receipt status."
+}
+if (-not $ReversedRemaining.receipt.reversal_stock_movement_id) {
+  throw "Reversal did not return reversal_stock_movement_id."
+}
+
+$ReversalMovements = Invoke-RestMethod "$BaseUrl/api/v1/inventory/stock-movements" -Headers $Headers
+$ReversalMovement = @($ReversalMovements.movements | Where-Object { $_.id -eq $ReversedRemaining.receipt.reversal_stock_movement_id }) | Select-Object -First 1
+if (-not $ReversalMovement) {
+  throw "Receipt reversal stock movement was not found."
+}
+if ($ReversalMovement.movement_type -ne "receipt_reversal") {
+  throw "Expected receipt_reversal movement type."
+}
+if ($ReversalMovement.lines[0].quantity_delta -ne "-3.000") {
+  throw "Expected reversal quantity_delta -3.000."
+}
+
+$ReopenedBalances = Invoke-RestMethod "$BaseUrl/api/v1/inventory/stock-balances" -Headers $Headers
+$ReopenedBalance = @($ReopenedBalances.balances | Where-Object { $_.item_id -eq $Item.item.id -and $_.location_id -eq $Location.location.id }) | Select-Object -First 1
+if ($ReopenedBalance.quantity -ne "7.000") {
+  throw "Expected stock balance 7.000 after first reversal."
+}
+
+$ReopenedOrders = Invoke-RestMethod "$BaseUrl/api/v1/purchase/orders" -Headers $Headers
+$ReopenedOrder = @($ReopenedOrders.purchase_orders | Where-Object { $_.id -eq $Order.purchase_order.id }) | Select-Object -First 1
+if ($ReopenedOrder.status -ne "partially_received") {
+  throw "Expected partially_received after first reversal."
+}
+if ($ReopenedOrder.lines[0].received_quantity -ne "7.000" -or $ReopenedOrder.lines[0].remaining_quantity -ne "3.000") {
+  throw "Unexpected Purchase Order progress after first reversal."
+}
+
+Write-Host "Verifying repeated reversal is rejected..."
+$RepeatReverseResponse = Invoke-WebRequest "$BaseUrl/api/v1/purchase/receipts/$($RemainingReceipt.receipt.id)/reverse" `
+  -Method Post `
+  -ContentType "application/json" `
+  -Headers $Headers `
+  -Body (@{ reason = "Repeat reversal" } | ConvertTo-Json) `
+  -SkipHttpErrorCheck
+if ($RepeatReverseResponse.StatusCode -ne 409) {
+  throw "Expected repeated reversal to return 409."
+}
+$RepeatReverseError = $RepeatReverseResponse.Content | ConvertFrom-Json
+if ($RepeatReverseError.error.code -ne "purchase_receipt_already_reversed") {
+  throw "Expected purchase_receipt_already_reversed."
+}
+
+Write-Host "Reversing original receipt..."
+$ReversedOriginal = Invoke-RestMethod "$BaseUrl/api/v1/purchase/receipts/$($Receipt.receipt.id)/reverse" `
+  -Method Post `
+  -ContentType "application/json" `
+  -Headers $Headers `
+  -Body (@{ reason = "Verification reversal of original receipt" } | ConvertTo-Json)
+if ($ReversedOriginal.receipt.status -ne "reversed") {
+  throw "Expected original receipt to be reversed."
+}
+
+$ZeroBalances = Invoke-RestMethod "$BaseUrl/api/v1/inventory/stock-balances" -Headers $Headers
+$ZeroBalance = @($ZeroBalances.balances | Where-Object { $_.item_id -eq $Item.item.id -and $_.location_id -eq $Location.location.id }) | Select-Object -First 1
+if ($ZeroBalance.quantity -ne "0.000") {
+  throw "Expected stock balance 0.000 after all reversals, got $($ZeroBalance.quantity)."
+}
+
+$ResetOrders = Invoke-RestMethod "$BaseUrl/api/v1/purchase/orders" -Headers $Headers
+$ResetOrder = @($ResetOrders.purchase_orders | Where-Object { $_.id -eq $Order.purchase_order.id }) | Select-Object -First 1
+if ($ResetOrder.status -ne "approved") {
+  throw "Expected approved status after reversing all receipts."
+}
+if ($ResetOrder.lines[0].received_quantity -ne "0.000" -or $ResetOrder.lines[0].remaining_quantity -ne "10.000") {
+  throw "Unexpected Purchase Order progress after all reversals."
 }
 
 Write-Host ""
@@ -470,6 +577,48 @@ WHERE tenant_id = '$TenantID'
 "@
 if ((Invoke-ScalarSql -Sql $LifecycleOutboxSql) -ne "2") {
   throw "Expected partially_received and received outbox records."
+}
+
+$ReversalAuditSql = @"
+SELECT set_config('app.tenant_id', '$TenantID', false);
+SELECT count(*) FROM audit.audit_log
+WHERE tenant_id = '$TenantID'
+  AND action = 'purchase.receipt.reverse'
+  AND target_id IN ('$($Receipt.receipt.id)', '$($RemainingReceipt.receipt.id)');
+"@
+if ((Invoke-ScalarSql -Sql $ReversalAuditSql) -ne "2") {
+  throw "Expected two receipt reversal audit records."
+}
+
+$ReversalOutboxSql = @"
+SELECT count(*) FROM core.outbox_events
+WHERE tenant_id = '$TenantID'
+  AND event_type = 'purchase.receipt.reversed.v1'
+  AND aggregate_id IN ('$($Receipt.receipt.id)', '$($RemainingReceipt.receipt.id)');
+"@
+if ((Invoke-ScalarSql -Sql $ReversalOutboxSql) -ne "2") {
+  throw "Expected two receipt reversal outbox records."
+}
+
+$ReopenedOrderEventSql = @"
+SELECT count(*) FROM core.outbox_events
+WHERE tenant_id = '$TenantID'
+  AND event_type = 'purchase.order.receipt_progress_reopened.v1'
+  AND aggregate_id = '$OrderID';
+"@
+if ((Invoke-ScalarSql -Sql $ReopenedOrderEventSql) -ne "2") {
+  throw "Expected two Purchase Order receipt progress reopened events."
+}
+
+$ReopenedOrderAuditSql = @"
+SELECT set_config('app.tenant_id', '$TenantID', false);
+SELECT count(*) FROM audit.audit_log
+WHERE tenant_id = '$TenantID'
+  AND action = 'purchase.order.receipt_progress_reopened'
+  AND target_id = '$OrderID';
+"@
+if ((Invoke-ScalarSql -Sql $ReopenedOrderAuditSql) -ne "2") {
+  throw "Expected two Purchase Order receipt progress reopened audit records."
 }
 
 Write-Host ""

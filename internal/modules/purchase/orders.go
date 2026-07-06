@@ -145,8 +145,8 @@ SELECT
     i.sku,
     i.name,
     pol.quantity::text,
-    LEAST(COALESCE(receipt_progress.received_quantity, 0), pol.quantity)::text,
-    GREATEST(pol.quantity - COALESCE(receipt_progress.received_quantity, 0), 0)::text,
+    LEAST(COALESCE(receipt_progress.received_quantity, 0), pol.quantity)::numeric(18, 3)::text,
+    GREATEST(pol.quantity - COALESCE(receipt_progress.received_quantity, 0), 0)::numeric(18, 3)::text,
     pol.unit_price::text,
     (pol.quantity * pol.unit_price)::text
 FROM purchase.purchase_order_lines pol
@@ -161,6 +161,7 @@ LEFT JOIN LATERAL (
        AND rl.receipt_id = r.id
     WHERE r.purchase_order_id = pol.purchase_order_id
       AND rl.item_id = pol.item_id
+      AND r.status = 'posted'
 ) receipt_progress ON true
 ORDER BY pol.created_at ASC, pol.id ASC
 `)
@@ -404,8 +405,8 @@ WHERE po.id = $1::uuid
 	rows, err := tx.Query(ctx, `
 SELECT pol.id::text, pol.item_id::text, i.sku, i.name,
        pol.quantity::text,
-       LEAST(COALESCE(receipt_progress.received_quantity, 0), pol.quantity)::text,
-       GREATEST(pol.quantity - COALESCE(receipt_progress.received_quantity, 0), 0)::text,
+       LEAST(COALESCE(receipt_progress.received_quantity, 0), pol.quantity)::numeric(18, 3)::text,
+       GREATEST(pol.quantity - COALESCE(receipt_progress.received_quantity, 0), 0)::numeric(18, 3)::text,
        pol.unit_price::text, (pol.quantity * pol.unit_price)::text
 FROM purchase.purchase_order_lines pol
 JOIN inventory.items i
@@ -419,6 +420,7 @@ LEFT JOIN LATERAL (
        AND rl.receipt_id = r.id
     WHERE r.purchase_order_id = pol.purchase_order_id
       AND rl.item_id = pol.item_id
+      AND r.status = 'posted'
 ) receipt_progress ON true
 WHERE pol.purchase_order_id = $1::uuid
 ORDER BY pol.created_at ASC, pol.id ASC
@@ -441,10 +443,11 @@ ORDER BY pol.created_at ASC, pol.id ASC
 
 func insertPurchaseOrderEventRecords(ctx context.Context, tx pgx.Tx, tenantID string, actorID string, order PurchaseOrder, action string) error {
 	eventTypes := map[string]string{
-		"create":             "purchase.order.created.v1",
-		"approve":            "purchase.order.approved.v1",
-		"partially_received": "purchase.order.partially_received.v1",
-		"received":           "purchase.order.received.v1",
+		"create":                    "purchase.order.created.v1",
+		"approve":                   "purchase.order.approved.v1",
+		"partially_received":        "purchase.order.partially_received.v1",
+		"received":                  "purchase.order.received.v1",
+		"receipt_progress_reopened": "purchase.order.receipt_progress_reopened.v1",
 	}
 	eventType := eventTypes[action]
 

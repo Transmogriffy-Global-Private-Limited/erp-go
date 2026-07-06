@@ -25,19 +25,22 @@ func NewStore(db *pgxpool.Pool) Store {
 }
 
 type Receipt struct {
-	ID                  string             `json:"id"`
-	ReceiptNumber       string             `json:"receipt_number"`
-	PurchaseOrderID     string             `json:"purchase_order_id"`
-	PurchaseOrderNumber string             `json:"purchase_order_number"`
-	Supplier            PurchaseOrderParty `json:"supplier"`
-	SupplierName        string             `json:"supplier_name"`
-	Reference           string             `json:"reference"`
-	Notes               string             `json:"notes"`
-	ReceivedAt          time.Time          `json:"received_at"`
-	Status              string             `json:"status"`
-	StockMovementID     string             `json:"stock_movement_id"`
-	Lines               []ReceiptLine      `json:"lines"`
-	CreatedAt           time.Time          `json:"created_at"`
+	ID                      string             `json:"id"`
+	ReceiptNumber           string             `json:"receipt_number"`
+	PurchaseOrderID         string             `json:"purchase_order_id"`
+	PurchaseOrderNumber     string             `json:"purchase_order_number"`
+	Supplier                PurchaseOrderParty `json:"supplier"`
+	SupplierName            string             `json:"supplier_name"`
+	Reference               string             `json:"reference"`
+	Notes                   string             `json:"notes"`
+	ReceivedAt              time.Time          `json:"received_at"`
+	Status                  string             `json:"status"`
+	StockMovementID         string             `json:"stock_movement_id"`
+	ReversalStockMovementID string             `json:"reversal_stock_movement_id"`
+	ReversalReason          string             `json:"reversal_reason"`
+	ReversedAt              *time.Time         `json:"reversed_at"`
+	Lines                   []ReceiptLine      `json:"lines"`
+	CreatedAt               time.Time          `json:"created_at"`
 }
 
 type ReceiptLine struct {
@@ -89,6 +92,9 @@ SELECT
     r.received_at,
     r.status,
     r.stock_movement_id::text,
+    COALESCE(r.reversal_stock_movement_id::text, ''),
+    r.reversal_reason,
+    r.reversed_at,
     r.created_at
 FROM purchase.receipts r
 LEFT JOIN purchase.purchase_orders po
@@ -122,6 +128,9 @@ LIMIT 100
 				&receipt.ReceivedAt,
 				&receipt.Status,
 				&receipt.StockMovementID,
+				&receipt.ReversalStockMovementID,
+				&receipt.ReversalReason,
+				&receipt.ReversedAt,
 				&receipt.CreatedAt,
 			); err != nil {
 				return fmt.Errorf("scan purchase receipt: %w", err)
@@ -341,6 +350,7 @@ SELECT $3::numeric <= (
            AND r.id = rl.receipt_id
         WHERE r.purchase_order_id = $1::uuid
           AND rl.item_id = $2::uuid
+          AND r.status = 'posted'
     ), 0)
 )
 FROM purchase.purchase_order_lines pol
@@ -439,6 +449,7 @@ LEFT JOIN LATERAL (
        AND rl.receipt_id = r.id
     WHERE r.purchase_order_id = $1::uuid
       AND rl.item_id = ordered.item_id
+      AND r.status = 'posted'
 ) receipt_progress ON true
 `, receipt.PurchaseOrderID).Scan(&fullyReceived); err != nil {
 			return fmt.Errorf("calculate purchase order receipt progress: %w", err)
