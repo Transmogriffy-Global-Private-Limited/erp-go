@@ -41,6 +41,9 @@ Invoke-Step -Name "Go tests" -Action {
 Invoke-Step -Name "ERP route wiring verification" -Action {
   & (Join-Path $PSScriptRoot "verify-erp-route-wiring.ps1")
 }
+Invoke-Step -Name "Server shutdown wiring verification" -Action {
+  & (Join-Path $PSScriptRoot "verify-server-shutdown-wiring.ps1")
+}
 
 Invoke-Step -Name "Database connectivity" -Action {
   & (Join-Path $PSScriptRoot "db-check.ps1") -EnvFile $EnvFile

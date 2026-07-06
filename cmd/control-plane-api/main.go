@@ -33,9 +33,24 @@ func main() {
 	}
 
 	log.Printf("control-plane-api listening on %s", addr)
+	shutdownComplete := make(chan struct{})
+	go func() {
+		defer close(shutdownComplete)
+		<-ctx.Done()
+		stop()
+		log.Println("control-plane-api shutting down")
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			log.Printf("control-plane-api forced shutdown: %v", err)
+		}
+	}()
 
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
+	}
+	if ctx.Err() != nil {
+		<-shutdownComplete
 	}
 }
 

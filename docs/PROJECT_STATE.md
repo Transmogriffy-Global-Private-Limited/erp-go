@@ -1813,3 +1813,20 @@ Inventory v1 now covers master data, append-only on-hand truth, Purchase inbound
 Next recommended step:
 
 - Add Sales Invoices backed by fulfilled Sales Orders and explicit Accounting commands/events.
+
+## 2026-07-06 update — Ctrl+C server shutdown
+
+Native server shutdown was corrected.
+
+Behavior:
+
+- control-plane-api and erp-api gracefully shut down their HTTP servers on Ctrl+C.
+- A ten-second timeout bounds graceful shutdown.
+- Signal handling is restored during shutdown so a second Ctrl+C can force termination.
+- API and worker launchers build ignored `.local/bin` executables and run them directly instead of using `go run`.
+- Restarted API windows remain interactive and each server can be stopped with Ctrl+C in its own window.
+
+New verification:
+
+- scripts/verify-server-shutdown-wiring.ps1
+- scripts/verify-all.ps1 includes server shutdown wiring verification.

@@ -20,7 +20,19 @@ if ($Once) {
 $Args += "-limit"
 $Args += "$Limit"
 
-go run ./cmd/erp-worker @Args
+$BinDir = Join-Path $RepoRoot ".local/bin"
+$Binary = Join-Path $BinDir "erp-worker.exe"
+New-Item -ItemType Directory -Path $BinDir -Force | Out-Null
+
+go build -o $Binary ./cmd/erp-worker
+if ($LASTEXITCODE -ne 0) {
+  throw "Failed to build erp-worker."
+}
+
+if (-not $Once) {
+  Write-Host "erp-worker runs in this window. Press Ctrl+C to stop it."
+}
+& $Binary @Args
 $WorkerExitCode = $LASTEXITCODE
 
 if ($WorkerExitCode -ne 0) {

@@ -2077,3 +2077,20 @@ Current next step:
 - Restart the APIs.
 - Run scripts/verify-inventory-v1.ps1.
 - Run scripts/verify-all.ps1.
+
+## 2026-07-06
+
+### Fixed Ctrl+C shutdown for native servers
+
+Changed:
+
+- control-plane-api and erp-api now react to interrupt cancellation with bounded graceful HTTP shutdown.
+- A second Ctrl+C regains default force-termination behavior during shutdown.
+- API and worker PowerShell launchers build and invoke direct local executables instead of `go run` wrappers.
+- `.local/` build output is ignored.
+- Added static shutdown-wiring verification and verify-all integration.
+
+Verification:
+
+- Run scripts/verify-server-shutdown-wiring.ps1.
+- Start each continuous launcher and press Ctrl+C once to confirm it exits.

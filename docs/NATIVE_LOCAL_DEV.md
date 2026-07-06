@@ -41,6 +41,10 @@ Run ERP worker continuously:
 
 .\scripts\run-erp-worker.ps1
 
+Each continuous launcher builds and runs its server directly in the current console. Press Ctrl+C once for graceful shutdown. A second Ctrl+C forces termination if graceful shutdown exceeds its timeout.
+
+`restart-local-apis.ps1` opens one interactive PowerShell window per API. Press Ctrl+C in the corresponding window to stop that API.
+
 ## Verification
 
 Run all checks:

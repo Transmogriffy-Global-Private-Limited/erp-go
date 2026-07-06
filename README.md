@@ -32,6 +32,7 @@ This repository currently contains the first bootable backend spine:
 - posted Sales Issues with stock availability and fulfillment progress
 - compensating Sales Issue reversal with order-progress reopening
 - Inventory transfers, stock counts, reservations, ATP, cost history, valuation, and reports
+- Ctrl+C-aware graceful shutdown for all native local servers
 - audit and outbox writes on Inventory item creation
 - DB-backed outbox worker v1
 - master verification script
