@@ -23,20 +23,24 @@ var (
 )
 
 type Issue struct {
-	ID                  string          `json:"id"`
-	IssueNumber         string          `json:"issue_number"`
-	SalesOrderID        string          `json:"sales_order_id"`
-	SalesOrderNumber    string          `json:"sales_order_number"`
-	Customer            SalesOrderParty `json:"customer"`
-	CustomerName        string          `json:"customer_name"`
-	Reference           string          `json:"reference"`
-	Notes               string          `json:"notes"`
-	IssuedAt            time.Time       `json:"issued_at"`
-	Status              string          `json:"status"`
-	StockMovementID     string          `json:"stock_movement_id"`
-	StockMovementNumber string          `json:"stock_movement_number"`
-	Lines               []IssueLine     `json:"lines"`
-	CreatedAt           time.Time       `json:"created_at"`
+	ID                          string          `json:"id"`
+	IssueNumber                 string          `json:"issue_number"`
+	SalesOrderID                string          `json:"sales_order_id"`
+	SalesOrderNumber            string          `json:"sales_order_number"`
+	Customer                    SalesOrderParty `json:"customer"`
+	CustomerName                string          `json:"customer_name"`
+	Reference                   string          `json:"reference"`
+	Notes                       string          `json:"notes"`
+	IssuedAt                    time.Time       `json:"issued_at"`
+	Status                      string          `json:"status"`
+	StockMovementID             string          `json:"stock_movement_id"`
+	StockMovementNumber         string          `json:"stock_movement_number"`
+	ReversalStockMovementID     string          `json:"reversal_stock_movement_id"`
+	ReversalStockMovementNumber string          `json:"reversal_stock_movement_number"`
+	ReversalReason              string          `json:"reversal_reason"`
+	ReversedAt                  *time.Time      `json:"reversed_at"`
+	Lines                       []IssueLine     `json:"lines"`
+	CreatedAt                   time.Time       `json:"created_at"`
 }
 
 type IssueLine struct {
@@ -71,13 +75,18 @@ func (s Store) ListIssues(ctx context.Context, tenantID string) ([]Issue, error)
 SELECT si.id::text, si.issue_number, so.id::text, so.order_number,
        c.id::text, c.code, si.customer_name, si.reference, si.notes,
        si.issued_at, si.status, si.stock_movement_id::text,
-       sm.movement_number, si.created_at
+       sm.movement_number, COALESCE(si.reversal_stock_movement_id::text, ''),
+       COALESCE(rsm.movement_number, ''), si.reversal_reason, si.reversed_at,
+       si.created_at
 FROM sales.issues si
 JOIN sales.orders so ON so.tenant_id = si.tenant_id AND so.id = si.sales_order_id
 JOIN sales.customers c ON c.tenant_id = si.tenant_id AND c.id = si.customer_id
 JOIN inventory.stock_movements sm
   ON sm.tenant_id = si.tenant_id
  AND sm.id = si.stock_movement_id
+LEFT JOIN inventory.stock_movements rsm
+  ON rsm.tenant_id = si.tenant_id
+ AND rsm.id = si.reversal_stock_movement_id
 ORDER BY si.issued_at DESC, si.created_at DESC, si.id DESC
 LIMIT 100
 `)
@@ -93,7 +102,9 @@ LIMIT 100
 				&issue.ID, &issue.IssueNumber, &issue.SalesOrderID, &issue.SalesOrderNumber,
 				&issue.Customer.ID, &issue.Customer.Code, &issue.CustomerName,
 				&issue.Reference, &issue.Notes, &issue.IssuedAt, &issue.Status,
-				&issue.StockMovementID, &issue.StockMovementNumber, &issue.CreatedAt,
+				&issue.StockMovementID, &issue.StockMovementNumber,
+				&issue.ReversalStockMovementID, &issue.ReversalStockMovementNumber,
+				&issue.ReversalReason, &issue.ReversedAt, &issue.CreatedAt,
 			); err != nil {
 				return fmt.Errorf("scan sales issue: %w", err)
 			}

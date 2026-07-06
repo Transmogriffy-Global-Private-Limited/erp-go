@@ -30,6 +30,54 @@ func (a *app) salesIssuesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type reverseSalesIssueInput struct {
+	Reason string `json:"reason"`
+}
+
+func (a *app) salesIssueActionHandler(w http.ResponseWriter, r *http.Request) {
+	const prefix = "/api/v1/sales/issues/"
+	rest := strings.Trim(strings.TrimPrefix(r.URL.Path, prefix), "/")
+	parts := strings.Split(rest, "/")
+	if len(parts) != 2 || !looksLikeUUID(parts[0]) || parts[1] != "reverse" {
+		http.NotFound(w, r)
+		return
+	}
+	if r.Method != http.MethodPost {
+		httpx.MethodNotAllowed(w, http.MethodPost)
+		return
+	}
+	if !a.requirePermission(w, r, "sales.issue.reverse") {
+		return
+	}
+
+	var input reverseSalesIssueInput
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		httpx.Error(w, http.StatusBadRequest, "invalid_json", "request body must be valid JSON")
+		return
+	}
+	input.Reason = strings.TrimSpace(input.Reason)
+	if input.Reason == "" {
+		httpx.Error(w, http.StatusBadRequest, "reversal_reason_required", "reason is required")
+		return
+	}
+
+	tenantID, _ := tenancy.TenantIDFromContext(r.Context())
+	userID, _ := auth.UserIDFromContext(r.Context())
+	issue, err := a.sales.ReverseIssue(r.Context(), tenantID, userID, parts[0], input.Reason)
+	switch {
+	case errors.Is(err, sales.ErrIssueNotFound):
+		httpx.Error(w, http.StatusNotFound, "sales_issue_not_found", "sales issue not found")
+	case errors.Is(err, sales.ErrIssueAlreadyReversed):
+		httpx.Error(w, http.StatusConflict, "sales_issue_already_reversed", "sales issue is already reversed")
+	case errors.Is(err, sales.ErrIssueNotReversible):
+		httpx.Error(w, http.StatusConflict, "sales_issue_not_reversible", "sales issue is not reversible")
+	case err != nil:
+		httpx.Error(w, http.StatusInternalServerError, "sales_issue_reverse_failed", "failed to reverse sales issue")
+	default:
+		httpx.JSON(w, http.StatusOK, map[string]any{"tenant_id": tenantID, "issue": issue})
+	}
+}
+
 func (a *app) listSalesIssues(w http.ResponseWriter, r *http.Request) {
 	tenantID, _ := tenancy.TenantIDFromContext(r.Context())
 	issues, err := a.sales.ListIssues(r.Context(), tenantID)

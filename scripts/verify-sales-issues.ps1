@@ -252,4 +252,105 @@ WHERE tenant_id = '$TenantAID'
 "@
 if ((Invoke-ScalarSql -Sql $OrderProgressOutboxSql) -ne "2") { throw "Expected partial and fulfilled order events." }
 
+Write-Host "Verifying reversal requires a reason..."
+$MissingReasonResponse = Invoke-WebRequest "$BaseUrl/api/v1/sales/issues/$($Final.id)/reverse" -Method Post -ContentType "application/json" -Headers $HeadersA -Body (@{
+  reason = ""
+} | ConvertTo-Json) -SkipHttpErrorCheck
+if ($MissingReasonResponse.StatusCode -ne 400) { throw "Expected missing reversal reason to return 400." }
+$MissingReasonError = $MissingReasonResponse.Content | ConvertFrom-Json
+if ($MissingReasonError.error.code -ne "reversal_reason_required") { throw "Expected reversal_reason_required." }
+
+Write-Host "Verifying no-access user cannot reverse a sales issue..."
+$DeniedReverse = Invoke-WebRequest "$BaseUrl/api/v1/sales/issues/$($Final.id)/reverse" -Method Post -ContentType "application/json" -Headers $NoAccessHeaders -Body (@{
+  reason = "Denied reversal"
+} | ConvertTo-Json) -SkipHttpErrorCheck
+if ($DeniedReverse.StatusCode -ne 403) { throw "Expected no-access reversal to return 403." }
+
+Write-Host "Verifying cross-tenant reversal is hidden..."
+$CrossTenantReverse = Invoke-WebRequest "$BaseUrl/api/v1/sales/issues/$($Final.id)/reverse" -Method Post -ContentType "application/json" -Headers $HeadersB -Body (@{
+  reason = "Cross-tenant reversal"
+} | ConvertTo-Json) -SkipHttpErrorCheck
+if ($CrossTenantReverse.StatusCode -ne 404) { throw "Expected cross-tenant reversal to return 404." }
+
+Write-Host "Reversing final sales issue..."
+$FinalReversal = Invoke-RestMethod "$BaseUrl/api/v1/sales/issues/$($Final.id)/reverse" -Method Post -ContentType "application/json" -Headers $HeadersA -Body (@{
+  reason = "Final dispatch entered in error"
+} | ConvertTo-Json)
+$ReversedFinal = $FinalReversal.issue
+if ($ReversedFinal.status -ne "reversed") { throw "Final sales issue was not marked reversed." }
+if (-not $ReversedFinal.reversal_stock_movement_id -or -not $ReversedFinal.reversed_at) { throw "Final reversal metadata is incomplete." }
+if ($ReversedFinal.reversal_reason -ne "Final dispatch entered in error") { throw "Final reversal reason was not preserved." }
+
+$FinalReversalDeltaSql = @"
+SELECT set_config('app.tenant_id', '$TenantAID', false);
+SELECT quantity_delta::text FROM inventory.stock_movement_lines
+WHERE tenant_id = '$TenantAID'
+  AND movement_id = '$($ReversedFinal.reversal_stock_movement_id)'::uuid;
+"@
+if ([decimal](Invoke-ScalarSql -Sql $FinalReversalDeltaSql) -ne [decimal]6) { throw "Expected final reversal movement delta +6." }
+
+$ReopenedOrderList = Invoke-RestMethod "$BaseUrl/api/v1/sales/orders" -Headers $HeadersA
+$PartiallyReopenedOrder = @($ReopenedOrderList.sales_orders | Where-Object { $_.id -eq $Order.id }) | Select-Object -First 1
+if ($PartiallyReopenedOrder.status -ne "partially_fulfilled") { throw "Expected partially_fulfilled after final issue reversal." }
+if ($PartiallyReopenedOrder.lines[0].issued_quantity -ne "4.000") { throw "Expected reopened issued_quantity 4.000." }
+if ($PartiallyReopenedOrder.lines[0].remaining_quantity -ne "6.000") { throw "Expected reopened remaining_quantity 6.000." }
+if ((Invoke-ScalarSql -Sql $BalanceSql) -ne "6.000") { throw "Expected stock balance 6.000 after final reversal." }
+
+Write-Host "Verifying repeated reversal is rejected..."
+$RepeatReversal = Invoke-WebRequest "$BaseUrl/api/v1/sales/issues/$($Final.id)/reverse" -Method Post -ContentType "application/json" -Headers $HeadersA -Body (@{
+  reason = "Repeated reversal"
+} | ConvertTo-Json) -SkipHttpErrorCheck
+if ($RepeatReversal.StatusCode -ne 409) { throw "Expected repeated reversal to return 409." }
+$RepeatReversalError = $RepeatReversal.Content | ConvertFrom-Json
+if ($RepeatReversalError.error.code -ne "sales_issue_already_reversed") { throw "Expected sales_issue_already_reversed." }
+
+Write-Host "Reversing original partial sales issue..."
+$PartialReversal = Invoke-RestMethod "$BaseUrl/api/v1/sales/issues/$($Partial.id)/reverse" -Method Post -ContentType "application/json" -Headers $HeadersA -Body (@{
+  reason = "Partial dispatch entered in error"
+} | ConvertTo-Json)
+$ReversedPartial = $PartialReversal.issue
+if ($ReversedPartial.status -ne "reversed" -or -not $ReversedPartial.reversal_stock_movement_id) { throw "Partial sales issue reversal is incomplete." }
+
+$ConfirmedOrderList = Invoke-RestMethod "$BaseUrl/api/v1/sales/orders" -Headers $HeadersA
+$FullyReopenedOrder = @($ConfirmedOrderList.sales_orders | Where-Object { $_.id -eq $Order.id }) | Select-Object -First 1
+if ($FullyReopenedOrder.status -ne "confirmed") { throw "Expected confirmed after all issue reversals." }
+if ($FullyReopenedOrder.lines[0].issued_quantity -ne "0.000") { throw "Expected reopened issued_quantity 0.000." }
+if ($FullyReopenedOrder.lines[0].remaining_quantity -ne "10.000") { throw "Expected reopened remaining_quantity 10.000." }
+if ((Invoke-ScalarSql -Sql $BalanceSql) -ne "10.000") { throw "Expected stock balance restored to 10.000." }
+
+Write-Host "Verifying original issue movements remain immutable..."
+$OriginalMovementSql = @"
+SELECT set_config('app.tenant_id', '$TenantAID', false);
+SELECT COALESCE(SUM(quantity_delta), 0)::numeric(18, 3)::text
+FROM inventory.stock_movement_lines
+WHERE tenant_id = '$TenantAID'
+  AND movement_id IN ('$($Partial.stock_movement_id)'::uuid, '$($Final.stock_movement_id)'::uuid);
+"@
+if ((Invoke-ScalarSql -Sql $OriginalMovementSql) -ne "-10.000") { throw "Original negative issue movements were changed." }
+
+$ReversalAuditSql = @"
+SELECT set_config('app.tenant_id', '$TenantAID', false);
+SELECT count(*) FROM audit.audit_log
+WHERE tenant_id = '$TenantAID'
+  AND action = 'sales.issue.reverse'
+  AND target_id IN ('$($Partial.id)', '$($Final.id)');
+"@
+if ((Invoke-ScalarSql -Sql $ReversalAuditSql) -ne "2") { throw "Expected two sales issue reversal audit records." }
+
+$ReversalOutboxSql = @"
+SELECT count(*) FROM core.outbox_events
+WHERE tenant_id = '$TenantAID'
+  AND event_type = 'sales.issue.reversed.v1'
+  AND aggregate_id IN ('$($Partial.id)', '$($Final.id)');
+"@
+if ((Invoke-ScalarSql -Sql $ReversalOutboxSql) -ne "2") { throw "Expected two sales issue reversal outbox records." }
+
+$ReopenedOutboxSql = @"
+SELECT count(*) FROM core.outbox_events
+WHERE tenant_id = '$TenantAID'
+  AND event_type = 'sales.order.fulfillment_reopened.v1'
+  AND aggregate_id = '$($Order.id)';
+"@
+if ((Invoke-ScalarSql -Sql $ReopenedOutboxSql) -ne "2") { throw "Expected two sales order fulfillment reopening events." }
+
 Write-Host "Sales issues verification passed."

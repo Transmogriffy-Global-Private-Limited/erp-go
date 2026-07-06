@@ -19,6 +19,7 @@ permissions:
   - sales.order.approve
   - sales.issue.read
   - sales.issue.write
+  - sales.issue.reverse
   - sales.invoice.read
   - sales.invoice.create
   - sales.invoice.cancel
@@ -53,6 +54,10 @@ api:
       path: /api/v1/sales/issues
       permission: sales.issue.write
 
+    - method: POST
+      path: /api/v1/sales/issues/{sales_issue_id}/reverse
+      permission: sales.issue.reverse
+
 database:
   schema: sales
   owns_tables:
@@ -71,6 +76,8 @@ events:
     - sales.order.partially_fulfilled.v1
     - sales.order.fulfilled.v1
     - sales.issue.posted.v1
+    - sales.issue.reversed.v1
+    - sales.order.fulfillment_reopened.v1
     - sales.invoice.created.v1
     - sales.invoice.cancelled.v1
 

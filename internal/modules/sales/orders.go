@@ -335,6 +335,8 @@ func insertSalesOrderEventRecords(ctx context.Context, tx pgx.Tx, tenantID strin
 		eventType = "sales.order.partially_fulfilled.v1"
 	case "fulfilled":
 		eventType = "sales.order.fulfilled.v1"
+	case "fulfillment_reopened":
+		eventType = "sales.order.fulfillment_reopened.v1"
 	}
 	if err := audit.Insert(ctx, tx, audit.Entry{
 		TenantID: tenantID, ActorType: "tenant_user", ActorID: actorID,

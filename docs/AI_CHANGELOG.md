@@ -1998,3 +1998,45 @@ Current next step:
 - Restart the APIs.
 - Run scripts/verify-sales-issues.ps1.
 - Run scripts/verify-all.ps1.
+
+## 2026-07-06
+
+### Added Sales Issue Reversal
+
+Added:
+
+- migrations/000021_sales_issue_reversal.up.sql
+- migrations/000021_sales_issue_reversal.down.sql
+- internal/modules/inventory/issue_reversal.go
+- internal/modules/sales/reversals.go
+- docs/decisions/0047-sales-issue-reversal.md
+
+Updated:
+
+- internal/modules/sales/issues.go
+- internal/modules/sales/orders.go
+- cmd/erp-api/sales_issues_handlers.go
+- cmd/erp-api/routes.go
+- manifests/sales.module.yaml
+- scripts/seed-dev-rbac.ps1
+- scripts/verify-erp-route-wiring.ps1
+- scripts/verify-sales-issues.ps1
+- README.md
+- docs/PROJECT_STATE.md
+- docs/AI_CHANGELOG.md
+
+Behavior:
+
+- Posted Sales Issues can be reversed once with a required reason.
+- Inventory appends a compensating positive issue_reversal movement.
+- Original issue and stock ledger facts remain immutable.
+- Reversed issues no longer contribute to fulfillment progress.
+- Sales Orders reopen to partially_fulfilled or confirmed.
+- Reversal and reopening write audit/outbox records atomically.
+
+Current next step:
+
+- Apply migration 000021_sales_issue_reversal.
+- Restart the APIs.
+- Run scripts/verify-sales-issues.ps1.
+- Run scripts/verify-all.ps1.

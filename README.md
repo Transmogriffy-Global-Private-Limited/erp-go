@@ -30,6 +30,7 @@ This repository currently contains the first bootable backend spine:
 - tenant-owned Sales Customer master data
 - tenant-owned Sales Orders with draft and confirmed lifecycle
 - posted Sales Issues with stock availability and fulfillment progress
+- compensating Sales Issue reversal with order-progress reopening
 - audit and outbox writes on Inventory item creation
 - DB-backed outbox worker v1
 - master verification script

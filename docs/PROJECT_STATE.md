@@ -1744,3 +1744,39 @@ New verification:
 Next recommended step:
 
 - Add Sales Issue reversal using compensating positive Inventory movements and Sales Order progress reopening.
+
+## 2026-07-06 update — Sales Issue Reversal
+
+Sales Issue reversal was added.
+
+New endpoint:
+
+- POST /api/v1/sales/issues/{sales_issue_id}/reverse
+
+New permission:
+
+- sales.issue.reverse
+
+Behavior:
+
+- Reversal requires a reason and a posted tenant Sales Issue.
+- Reversal appends a positive `issue_reversal` Inventory movement.
+- Original Sales Issues and negative stock movements remain immutable.
+- Reversed issues are excluded from Sales Order fulfillment progress.
+- Orders reopen to partially_fulfilled or confirmed as appropriate.
+- Repeated reversal returns a conflict.
+- Inventory, issue, and order lifecycle changes write audit/outbox records atomically.
+
+New events:
+
+- sales.issue.reversed.v1
+- sales.order.fulfillment_reopened.v1
+
+Updated verification:
+
+- scripts/verify-sales-issues.ps1 checks reason enforcement, RBAC, tenant isolation, compensating stock, repeated reversal, both reopening states, immutable original movements, audit, and outbox behavior.
+- scripts/verify-erp-route-wiring.ps1 guards the reversal action route.
+
+Next recommended step:
+
+- Add Inventory transfers between locations using balanced, atomic movement pairs.
