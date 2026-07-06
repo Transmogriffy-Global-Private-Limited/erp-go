@@ -60,9 +60,9 @@ type CreateReceiptInput struct {
 }
 
 var (
-	ErrReceiptPurchaseOrderNotApproved = errors.New("purchase order not found or not approved")
-	ErrReceiptItemNotOnOrder           = errors.New("receipt item is not on purchase order")
-	ErrReceiptQuantityExceedsRemaining = errors.New("receipt quantity exceeds purchase order remaining quantity")
+	ErrReceiptPurchaseOrderNotReceivable = errors.New("purchase order not found or not receivable")
+	ErrReceiptItemNotOnOrder             = errors.New("receipt item is not on purchase order")
+	ErrReceiptQuantityExceedsRemaining   = errors.New("receipt quantity exceeds purchase order remaining quantity")
 )
 
 type CreateReceiptLine struct {
@@ -217,14 +217,15 @@ func (s Store) CreateReceipt(ctx context.Context, tenantID string, actorID strin
 	var receipt Receipt
 
 	err := platformdb.WithTenantTx(ctx, s.db, tenantID, func(tx pgx.Tx) error {
+		var previousOrderStatus string
 		if err := tx.QueryRow(ctx, `
-SELECT po.id::text, po.order_number, s.id::text, s.code, s.name
+SELECT po.id::text, po.order_number, s.id::text, s.code, s.name, po.status
 FROM purchase.purchase_orders po
 JOIN purchase.suppliers s
     ON s.tenant_id = po.tenant_id
    AND s.id = po.supplier_id
 WHERE po.id = $1::uuid
-  AND po.status = 'approved'
+  AND po.status IN ('approved', 'partially_received')
 FOR UPDATE OF po
 `, input.PurchaseOrderID).Scan(
 			&receipt.PurchaseOrderID,
@@ -232,9 +233,10 @@ FOR UPDATE OF po
 			&receipt.Supplier.ID,
 			&receipt.Supplier.Code,
 			&receipt.Supplier.Name,
+			&previousOrderStatus,
 		); err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
-				return ErrReceiptPurchaseOrderNotApproved
+				return ErrReceiptPurchaseOrderNotReceivable
 			}
 			return fmt.Errorf("load approved purchase order: %w", err)
 		}
@@ -418,6 +420,51 @@ WHERE i.tenant_id = $1::uuid
 			}
 
 			receipt.Lines = append(receipt.Lines, line)
+		}
+
+		var fullyReceived bool
+		if err := tx.QueryRow(ctx, `
+SELECT bool_and(COALESCE(receipt_progress.received_quantity, 0) >= ordered.quantity)
+FROM (
+    SELECT item_id, SUM(quantity) AS quantity
+    FROM purchase.purchase_order_lines
+    WHERE purchase_order_id = $1::uuid
+    GROUP BY item_id
+) ordered
+LEFT JOIN LATERAL (
+    SELECT SUM(rl.quantity_received) AS received_quantity
+    FROM purchase.receipts r
+    JOIN purchase.receipt_lines rl
+        ON rl.tenant_id = r.tenant_id
+       AND rl.receipt_id = r.id
+    WHERE r.purchase_order_id = $1::uuid
+      AND rl.item_id = ordered.item_id
+) receipt_progress ON true
+`, receipt.PurchaseOrderID).Scan(&fullyReceived); err != nil {
+			return fmt.Errorf("calculate purchase order receipt progress: %w", err)
+		}
+
+		orderStatus := "partially_received"
+		if fullyReceived {
+			orderStatus = "received"
+		}
+		if orderStatus != previousOrderStatus {
+			if _, err := tx.Exec(ctx, `
+UPDATE purchase.purchase_orders
+SET status = $2,
+    updated_at = now()
+WHERE id = $1::uuid
+`, receipt.PurchaseOrderID, orderStatus); err != nil {
+				return fmt.Errorf("update purchase order receipt status: %w", err)
+			}
+
+			order, err := loadPurchaseOrder(ctx, tx, receipt.PurchaseOrderID)
+			if err != nil {
+				return err
+			}
+			if err := insertPurchaseOrderEventRecords(ctx, tx, tenantID, actorID, order, orderStatus); err != nil {
+				return err
+			}
 		}
 
 		if err := audit.Insert(ctx, tx, audit.Entry{

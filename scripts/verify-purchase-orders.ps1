@@ -88,6 +88,8 @@ if ($Order.currency_code -ne "INR") { throw "Expected normalized INR currency co
 if ($Order.supplier.id -ne $Supplier.supplier.id) { throw "Supplier reference was not preserved." }
 if (@($Order.lines).Count -ne 1) { throw "Expected one purchase order line." }
 if ([decimal]$Order.lines[0].line_total -ne [decimal]62.5) { throw "Expected line total 62.5." }
+if ($Order.lines[0].received_quantity -ne "0.000") { throw "Expected initial received_quantity 0.000." }
+if ($Order.lines[0].remaining_quantity -ne "5.000") { throw "Expected initial remaining_quantity 5.000." }
 
 Write-Host "Listing purchase orders..."
 $ListA = Invoke-RestMethod "$BaseUrl/api/v1/purchase/orders" -Headers $HeadersA
@@ -125,6 +127,14 @@ $InvalidBodyObject = $OrderBody | ConvertFrom-Json
 $InvalidBodyObject.lines[0].quantity = "0"
 $InvalidResponse = Invoke-WebRequest "$BaseUrl/api/v1/purchase/orders" -Method Post -ContentType "application/json" -Headers $HeadersA -Body ($InvalidBodyObject | ConvertTo-Json -Depth 10) -SkipHttpErrorCheck
 if ($InvalidResponse.StatusCode -ne 400) { throw "Expected invalid quantity to return 400." }
+
+Write-Host "Verifying duplicate item lines are rejected..."
+$DuplicateBodyObject = $OrderBody | ConvertFrom-Json
+$DuplicateBodyObject.lines = @($DuplicateBodyObject.lines[0], $DuplicateBodyObject.lines[0])
+$DuplicateResponse = Invoke-WebRequest "$BaseUrl/api/v1/purchase/orders" -Method Post -ContentType "application/json" -Headers $HeadersA -Body ($DuplicateBodyObject | ConvertTo-Json -Depth 10) -SkipHttpErrorCheck
+if ($DuplicateResponse.StatusCode -ne 400) { throw "Expected duplicate item lines to return 400." }
+$DuplicateError = $DuplicateResponse.Content | ConvertFrom-Json
+if ($DuplicateError.error.code -ne "duplicate_item_id") { throw "Expected duplicate_item_id." }
 
 Write-Host "Verifying no-access RBAC..."
 $DeniedResponse = Invoke-WebRequest "$BaseUrl/api/v1/purchase/orders" -Method Post -ContentType "application/json" -Headers $NoAccessHeaders -Body $OrderBody -SkipHttpErrorCheck

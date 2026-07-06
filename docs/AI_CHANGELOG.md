@@ -1782,3 +1782,42 @@ Current next step:
 - Restart the APIs.
 - Run scripts/verify-purchase-receipts.ps1.
 - Run scripts/verify-all.ps1.
+
+## 2026-07-06
+
+### Added Purchase Order Receipt Progress
+
+Added:
+
+- migrations/000016_purchase_order_receipt_progress.up.sql
+- migrations/000016_purchase_order_receipt_progress.down.sql
+- docs/decisions/0042-purchase-order-receipt-progress.md
+
+Updated:
+
+- internal/modules/purchase/orders.go
+- internal/modules/purchase/receipts.go
+- cmd/erp-api/purchase_orders_handlers.go
+- cmd/erp-api/purchase_receipts_handlers.go
+- manifests/purchase.module.yaml
+- scripts/verify-purchase-orders.ps1
+- scripts/verify-purchase-receipts.ps1
+- README.md
+- docs/PROJECT_STATE.md
+- docs/AI_CHANGELOG.md
+
+Behavior:
+
+- Purchase Order lines return received_quantity and remaining_quantity.
+- Receipt transactions move orders to partially_received or received.
+- Lifecycle transitions write audit and outbox records atomically.
+- Duplicate item lines are rejected during Purchase Order creation.
+- Purchase Orders accept additional receipts only while approved or partially_received.
+
+Current next step:
+
+- Apply migration 000016_purchase_order_receipt_progress.
+- Restart the APIs.
+- Run scripts/verify-purchase-orders.ps1.
+- Run scripts/verify-purchase-receipts.ps1.
+- Run scripts/verify-all.ps1.

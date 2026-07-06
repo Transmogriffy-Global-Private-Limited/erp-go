@@ -1547,3 +1547,34 @@ Updated verification:
 Next recommended step:
 
 - Add ordered/received/remaining quantity projections and partially_received/received Purchase Order lifecycle states.
+
+## 2026-07-06 update
+
+Purchase Order receipt progress and lifecycle states were added.
+
+New migration:
+
+- migrations/000016_purchase_order_receipt_progress
+
+Behavior:
+
+- Purchase Order lines expose ordered, received, and remaining quantities.
+- Receipt progress is derived from posted Purchase Receipt lines.
+- The first incomplete receipt moves an order to partially_received.
+- Full receipt moves an order to received.
+- Receipt lifecycle transitions write Purchase Order audit and outbox records atomically.
+- Duplicate item lines are rejected so item-level receipt allocation remains unambiguous.
+
+New events:
+
+- purchase.order.partially_received.v1
+- purchase.order.received.v1
+
+Updated verification:
+
+- scripts/verify-purchase-orders.ps1 checks initial progress and duplicate-item rejection.
+- scripts/verify-purchase-receipts.ps1 checks partial/final progress, lifecycle states, audit, and outbox records.
+
+Next recommended step:
+
+- Add Purchase Receipt reversal using compensating Inventory movements and Purchase Order progress recalculation.

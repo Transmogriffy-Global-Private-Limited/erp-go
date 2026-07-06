@@ -11,6 +11,18 @@ $ErrorActionPreference = "Stop"
 $RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 Set-Location $RepoRoot
 
+. (Join-Path $PSScriptRoot "Import-DotEnv.ps1") -Path (Join-Path $RepoRoot $EnvFile)
+if (-not $env:MIGRATION_DATABASE_URL) {
+  throw "MIGRATION_DATABASE_URL is missing."
+}
+
+function Invoke-ScalarSql {
+  param([string] $Sql)
+  $Output = @(psql $env:MIGRATION_DATABASE_URL -v ON_ERROR_STOP=1 -At -c $Sql)
+  if ($LASTEXITCODE -ne 0) { throw "SQL query failed." }
+  return (($Output | Select-Object -Last 1) -join "").Trim()
+}
+
 & (Join-Path $PSScriptRoot "ensure-local-apis.ps1") `
   -BaseUrl $BaseUrl `
   -ControlPlaneUrl $ControlPlaneUrl
@@ -160,8 +172,8 @@ if ($DraftReceiptResponse.StatusCode -ne 400) {
 }
 
 $DraftReceiptError = $DraftReceiptResponse.Content | ConvertFrom-Json
-if ($DraftReceiptError.error.code -ne "purchase_order_not_approved") {
-  throw "Expected purchase_order_not_approved, got $($DraftReceiptError.error.code)."
+if ($DraftReceiptError.error.code -ne "purchase_order_not_receivable") {
+  throw "Expected purchase_order_not_receivable, got $($DraftReceiptError.error.code)."
 }
 
 $ApprovedOrder = Invoke-RestMethod "$BaseUrl/api/v1/purchase/orders/$($Order.purchase_order.id)/approve" `
@@ -304,6 +316,19 @@ if ($Balance.quantity -ne "7.000") {
 
 Write-Host "Purchase receipt stock balance verified."
 
+Write-Host "Checking partially received order progress..."
+$PartiallyReceivedOrders = Invoke-RestMethod "$BaseUrl/api/v1/purchase/orders" -Headers $Headers
+$PartiallyReceivedOrder = @($PartiallyReceivedOrders.purchase_orders | Where-Object { $_.id -eq $Order.purchase_order.id }) | Select-Object -First 1
+if ($PartiallyReceivedOrder.status -ne "partially_received") {
+  throw "Expected partially_received status, got $($PartiallyReceivedOrder.status)."
+}
+if ($PartiallyReceivedOrder.lines[0].received_quantity -ne "7.000") {
+  throw "Expected received_quantity 7.000."
+}
+if ($PartiallyReceivedOrder.lines[0].remaining_quantity -ne "3.000") {
+  throw "Expected remaining_quantity 3.000."
+}
+
 Write-Host ""
 Write-Host "Verifying over-receipt is rejected..."
 $OverReceiptBody = @{
@@ -362,6 +387,19 @@ if ($FinalBalance.quantity -ne "10.000") {
 
 Write-Host "Partial receipt completion verified."
 
+Write-Host "Checking received order progress..."
+$ReceivedOrders = Invoke-RestMethod "$BaseUrl/api/v1/purchase/orders" -Headers $Headers
+$ReceivedOrder = @($ReceivedOrders.purchase_orders | Where-Object { $_.id -eq $Order.purchase_order.id }) | Select-Object -First 1
+if ($ReceivedOrder.status -ne "received") {
+  throw "Expected received status, got $($ReceivedOrder.status)."
+}
+if ($ReceivedOrder.lines[0].received_quantity -ne "10.000") {
+  throw "Expected final received_quantity 10.000."
+}
+if ($ReceivedOrder.lines[0].remaining_quantity -ne "0.000") {
+  throw "Expected final remaining_quantity 0.000."
+}
+
 Write-Host ""
 Write-Host "Verifying invalid zero quantity is rejected..."
 $ZeroReceiptBody = @{
@@ -407,6 +445,32 @@ if ($DeniedResponse.StatusCode -ne 403) {
 }
 
 Write-Host "No-access purchase receipt create rejection verified."
+
+Write-Host ""
+Write-Host "Verifying Purchase Order receipt lifecycle audit and outbox records..."
+$OrderID = $Order.purchase_order.id
+$LifecycleAuditSql = @"
+SELECT set_config('app.tenant_id', '$TenantID', false);
+SELECT count(*) FROM audit.audit_log
+WHERE tenant_id = '$TenantID'
+  AND target_type = 'purchase.order'
+  AND target_id = '$OrderID'
+  AND action IN ('purchase.order.partially_received', 'purchase.order.received');
+"@
+if ((Invoke-ScalarSql -Sql $LifecycleAuditSql) -ne "2") {
+  throw "Expected partially_received and received audit records."
+}
+
+$LifecycleOutboxSql = @"
+SELECT count(*) FROM core.outbox_events
+WHERE tenant_id = '$TenantID'
+  AND aggregate_type = 'purchase.order'
+  AND aggregate_id = '$OrderID'
+  AND event_type IN ('purchase.order.partially_received.v1', 'purchase.order.received.v1');
+"@
+if ((Invoke-ScalarSql -Sql $LifecycleOutboxSql) -ne "2") {
+  throw "Expected partially_received and received outbox records."
+}
 
 Write-Host ""
 Write-Host "Purchase receipts verification passed."

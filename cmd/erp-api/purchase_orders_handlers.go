@@ -107,14 +107,20 @@ func (a *app) createPurchaseOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	seenItemIDs := make(map[string]struct{}, len(input.Lines))
 	for i := range input.Lines {
-		input.Lines[i].ItemID = strings.TrimSpace(input.Lines[i].ItemID)
+		input.Lines[i].ItemID = strings.ToLower(strings.TrimSpace(input.Lines[i].ItemID))
 		input.Lines[i].Quantity = strings.TrimSpace(input.Lines[i].Quantity)
 		input.Lines[i].UnitPrice = strings.TrimSpace(input.Lines[i].UnitPrice)
 		if !looksLikeUUID(input.Lines[i].ItemID) {
 			httpx.Error(w, http.StatusBadRequest, "invalid_item_id", "line item_id must be a UUID")
 			return
 		}
+		if _, exists := seenItemIDs[input.Lines[i].ItemID]; exists {
+			httpx.Error(w, http.StatusBadRequest, "duplicate_item_id", "each item_id may appear only once per purchase order")
+			return
+		}
+		seenItemIDs[input.Lines[i].ItemID] = struct{}{}
 		if !validPositiveDecimal(input.Lines[i].Quantity) {
 			httpx.Error(w, http.StatusBadRequest, "invalid_quantity", "line quantity must be a positive decimal")
 			return

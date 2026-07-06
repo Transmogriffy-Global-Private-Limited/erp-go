@@ -68,6 +68,8 @@ events:
     - purchase.receipt.created.v1
     - purchase.order.created.v1
     - purchase.order.approved.v1
+    - purchase.order.partially_received.v1
+    - purchase.order.received.v1
     - purchase.grn.posted.v1
 
   subscribes:

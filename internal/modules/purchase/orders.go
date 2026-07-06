@@ -43,13 +43,15 @@ type PurchaseOrderParty struct {
 }
 
 type PurchaseOrderLine struct {
-	ID        string `json:"id"`
-	ItemID    string `json:"item_id"`
-	ItemSKU   string `json:"item_sku"`
-	ItemName  string `json:"item_name"`
-	Quantity  string `json:"quantity"`
-	UnitPrice string `json:"unit_price"`
-	LineTotal string `json:"line_total"`
+	ID                string `json:"id"`
+	ItemID            string `json:"item_id"`
+	ItemSKU           string `json:"item_sku"`
+	ItemName          string `json:"item_name"`
+	Quantity          string `json:"quantity"`
+	ReceivedQuantity  string `json:"received_quantity"`
+	RemainingQuantity string `json:"remaining_quantity"`
+	UnitPrice         string `json:"unit_price"`
+	LineTotal         string `json:"line_total"`
 }
 
 type CreatePurchaseOrderInput struct {
@@ -143,12 +145,23 @@ SELECT
     i.sku,
     i.name,
     pol.quantity::text,
+    LEAST(COALESCE(receipt_progress.received_quantity, 0), pol.quantity)::text,
+    GREATEST(pol.quantity - COALESCE(receipt_progress.received_quantity, 0), 0)::text,
     pol.unit_price::text,
     (pol.quantity * pol.unit_price)::text
 FROM purchase.purchase_order_lines pol
 JOIN inventory.items i
     ON i.tenant_id = pol.tenant_id
    AND i.id = pol.item_id
+LEFT JOIN LATERAL (
+    SELECT SUM(rl.quantity_received) AS received_quantity
+    FROM purchase.receipts r
+    JOIN purchase.receipt_lines rl
+        ON rl.tenant_id = r.tenant_id
+       AND rl.receipt_id = r.id
+    WHERE r.purchase_order_id = pol.purchase_order_id
+      AND rl.item_id = pol.item_id
+) receipt_progress ON true
 ORDER BY pol.created_at ASC, pol.id ASC
 `)
 		if err != nil {
@@ -166,6 +179,8 @@ ORDER BY pol.created_at ASC, pol.id ASC
 				&line.ItemSKU,
 				&line.ItemName,
 				&line.Quantity,
+				&line.ReceivedQuantity,
+				&line.RemainingQuantity,
 				&line.UnitPrice,
 				&line.LineTotal,
 			); err != nil {
@@ -289,6 +304,8 @@ RETURNING id::text, quantity::text, unit_price::text, (quantity * unit_price)::t
 			); err != nil {
 				return fmt.Errorf("insert purchase order line: %w", err)
 			}
+			line.ReceivedQuantity = "0.000"
+			line.RemainingQuantity = line.Quantity
 
 			order.Lines = append(order.Lines, line)
 		}
@@ -386,11 +403,23 @@ WHERE po.id = $1::uuid
 	order.Lines = make([]PurchaseOrderLine, 0)
 	rows, err := tx.Query(ctx, `
 SELECT pol.id::text, pol.item_id::text, i.sku, i.name,
-       pol.quantity::text, pol.unit_price::text, (pol.quantity * pol.unit_price)::text
+       pol.quantity::text,
+       LEAST(COALESCE(receipt_progress.received_quantity, 0), pol.quantity)::text,
+       GREATEST(pol.quantity - COALESCE(receipt_progress.received_quantity, 0), 0)::text,
+       pol.unit_price::text, (pol.quantity * pol.unit_price)::text
 FROM purchase.purchase_order_lines pol
 JOIN inventory.items i
     ON i.tenant_id = pol.tenant_id
    AND i.id = pol.item_id
+LEFT JOIN LATERAL (
+    SELECT SUM(rl.quantity_received) AS received_quantity
+    FROM purchase.receipts r
+    JOIN purchase.receipt_lines rl
+        ON rl.tenant_id = r.tenant_id
+       AND rl.receipt_id = r.id
+    WHERE r.purchase_order_id = pol.purchase_order_id
+      AND rl.item_id = pol.item_id
+) receipt_progress ON true
 WHERE pol.purchase_order_id = $1::uuid
 ORDER BY pol.created_at ASC, pol.id ASC
 `, orderID)
@@ -401,7 +430,7 @@ ORDER BY pol.created_at ASC, pol.id ASC
 
 	for rows.Next() {
 		var line PurchaseOrderLine
-		if err := rows.Scan(&line.ID, &line.ItemID, &line.ItemSKU, &line.ItemName, &line.Quantity, &line.UnitPrice, &line.LineTotal); err != nil {
+		if err := rows.Scan(&line.ID, &line.ItemID, &line.ItemSKU, &line.ItemName, &line.Quantity, &line.ReceivedQuantity, &line.RemainingQuantity, &line.UnitPrice, &line.LineTotal); err != nil {
 			return PurchaseOrder{}, fmt.Errorf("scan purchase order line: %w", err)
 		}
 		order.Lines = append(order.Lines, line)
@@ -411,10 +440,13 @@ ORDER BY pol.created_at ASC, pol.id ASC
 }
 
 func insertPurchaseOrderEventRecords(ctx context.Context, tx pgx.Tx, tenantID string, actorID string, order PurchaseOrder, action string) error {
-	eventType := "purchase.order.created.v1"
-	if action == "approve" {
-		eventType = "purchase.order.approved.v1"
+	eventTypes := map[string]string{
+		"create":             "purchase.order.created.v1",
+		"approve":            "purchase.order.approved.v1",
+		"partially_received": "purchase.order.partially_received.v1",
+		"received":           "purchase.order.received.v1",
 	}
+	eventType := eventTypes[action]
 
 	if err := audit.Insert(ctx, tx, audit.Entry{
 		TenantID:   tenantID,

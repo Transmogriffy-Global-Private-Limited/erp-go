@@ -104,8 +104,8 @@ func (a *app) createPurchaseReceipt(w http.ResponseWriter, r *http.Request) {
 	userID, _ := auth.UserIDFromContext(r.Context())
 
 	receipt, err := a.purchase.CreateReceipt(r.Context(), tenantID, userID, input)
-	if errors.Is(err, purchase.ErrReceiptPurchaseOrderNotApproved) {
-		httpx.Error(w, http.StatusBadRequest, "purchase_order_not_approved", "purchase order must be approved and belong to the tenant")
+	if errors.Is(err, purchase.ErrReceiptPurchaseOrderNotReceivable) {
+		httpx.Error(w, http.StatusBadRequest, "purchase_order_not_receivable", "purchase order must be approved or partially received and belong to the tenant")
 		return
 	}
 	if errors.Is(err, purchase.ErrReceiptItemNotOnOrder) {
