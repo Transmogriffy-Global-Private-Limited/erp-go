@@ -145,6 +145,12 @@ Invoke-Step -Name "Sales orders verification" -Action {
     -ControlPlaneUrl $ControlPlaneUrl `
     -EnvFile $EnvFile
 }
+Invoke-Step -Name "Sales issues verification" -Action {
+  & (Join-Path $PSScriptRoot "verify-sales-issues.ps1") `
+    -BaseUrl $BaseUrl `
+    -ControlPlaneUrl $ControlPlaneUrl `
+    -EnvFile $EnvFile
+}
 Invoke-Step -Name "Control-plane auth verification" -Action {
   & (Join-Path $PSScriptRoot "verify-control-plane-auth.ps1") `
     -ControlPlaneUrl $ControlPlaneUrl `

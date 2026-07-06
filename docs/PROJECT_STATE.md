@@ -1701,3 +1701,46 @@ New verification:
 Next recommended step:
 
 - Add posted Sales Issues that create negative Inventory movements with stock-availability checks and partial Sales Order fulfillment.
+
+## 2026-07-06 update — Sales Issues
+
+Posted Sales Issues and Sales Order fulfillment progress were added.
+
+New endpoints:
+
+- GET /api/v1/sales/issues
+- POST /api/v1/sales/issues
+
+New tables:
+
+- sales.issues
+- sales.issue_lines
+
+New permissions:
+
+- sales.issue.read
+- sales.issue.write
+
+Behavior:
+
+- Only confirmed or partially fulfilled tenant Sales Orders can be issued.
+- Items must exist on the order and quantities cannot exceed the order remainder.
+- Inventory owns serialized availability checks and negative stock movement creation.
+- Sales Issue, Inventory movement, order progress, audit, and outbox writes are atomic.
+- Sales Orders expose issued and remaining quantities and transition through partially_fulfilled and fulfilled.
+
+New events:
+
+- sales.issue.posted.v1
+- sales.order.partially_fulfilled.v1
+- sales.order.fulfilled.v1
+
+New verification:
+
+- scripts/verify-sales-issues.ps1
+- scripts/verify-all.ps1 now includes Sales Issue verification.
+- The verifier covers draft and wrong-item rejection, location-level availability, partial and exact fulfillment, over-issue prevention, negative movement deltas, final stock balance, RBAC, tenant isolation, audit, and outbox behavior.
+
+Next recommended step:
+
+- Add Sales Issue reversal using compensating positive Inventory movements and Sales Order progress reopening.

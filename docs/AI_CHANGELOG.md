@@ -1953,3 +1953,48 @@ Current next step:
 - Restart the APIs.
 - Run scripts/verify-sales-orders.ps1.
 - Run scripts/verify-all.ps1.
+
+## 2026-07-06
+
+### Added Posted Sales Issues
+
+Added:
+
+- migrations/000020_sales_issues.up.sql
+- migrations/000020_sales_issues.down.sql
+- internal/modules/inventory/issue.go
+- internal/modules/sales/issues.go
+- cmd/erp-api/sales_issues_handlers.go
+- scripts/verify-sales-issues.ps1
+- docs/decisions/0046-sales-issues.md
+
+Updated:
+
+- internal/modules/sales/orders.go
+- cmd/erp-api/routes.go
+- manifests/inventory.module.yaml
+- manifests/sales.module.yaml
+- scripts/seed-dev-rbac.ps1
+- scripts/verify-erp-route-wiring.ps1
+- scripts/verify-all.ps1
+- README.md
+- docs/NATIVE_LOCAL_DEV.md
+- docs/PROJECT_STATE.md
+- docs/AI_CHANGELOG.md
+
+Behavior:
+
+- Confirmed Sales Orders can be fulfilled with posted Sales Issues.
+- Sales validates ordered and remaining quantities.
+- Inventory owns location-level availability checks and negative ledger writes.
+- Order lines derive issued and remaining quantities.
+- Orders transition to partially_fulfilled and fulfilled.
+- Sales, Inventory, audit, outbox, and progress writes commit atomically.
+- The focused verifier compares audit and outbox text identifiers without incompatible UUID casts.
+
+Current next step:
+
+- Apply migration 000020_sales_issues.
+- Restart the APIs.
+- Run scripts/verify-sales-issues.ps1.
+- Run scripts/verify-all.ps1.

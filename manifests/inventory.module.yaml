@@ -38,6 +38,7 @@ database:
 events:
   publishes:
     - inventory.item.created.v1
+    - inventory.stock_movement.created.v1
     - inventory.stock.changed.v1
     - inventory.stock.reserved.v1
     - inventory.stock.released.v1

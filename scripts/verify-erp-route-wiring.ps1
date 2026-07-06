@@ -112,6 +112,11 @@ Assert-Contains `
   -Label "sales order actions session and module-guarded route"
 
 Assert-Contains `
+  -Text $Routes `
+  -Pattern 'mux\.Handle\("/api/v1/sales/issues",\s*a\.erpSessionMiddleware\(a\.requireModule\("sales",\s*http\.HandlerFunc\(a\.salesIssuesHandler\)\)\)\)' `
+  -Label "sales issues session and module-guarded route"
+
+Assert-Contains `
   -Text $InventorySession `
   -Pattern 'X-ERP-Session' `
   -Label "inventory session header check"

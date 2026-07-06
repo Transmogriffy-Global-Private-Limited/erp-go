@@ -43,13 +43,15 @@ type SalesOrderParty struct {
 }
 
 type SalesOrderLine struct {
-	ID        string `json:"id"`
-	ItemID    string `json:"item_id"`
-	ItemSKU   string `json:"item_sku"`
-	ItemName  string `json:"item_name"`
-	Quantity  string `json:"quantity"`
-	UnitPrice string `json:"unit_price"`
-	LineTotal string `json:"line_total"`
+	ID                string `json:"id"`
+	ItemID            string `json:"item_id"`
+	ItemSKU           string `json:"item_sku"`
+	ItemName          string `json:"item_name"`
+	Quantity          string `json:"quantity"`
+	IssuedQuantity    string `json:"issued_quantity"`
+	RemainingQuantity string `json:"remaining_quantity"`
+	UnitPrice         string `json:"unit_price"`
+	LineTotal         string `json:"line_total"`
 }
 
 type CreateSalesOrderInput struct {
@@ -110,9 +112,22 @@ LIMIT 100
 
 		lineRows, err := tx.Query(ctx, `
 SELECT sol.id::text, sol.sales_order_id::text, sol.item_id::text, i.sku, i.name,
-       sol.quantity::text, sol.unit_price::text, (sol.quantity * sol.unit_price)::text
+       sol.quantity::text,
+       COALESCE(issue_progress.issued_quantity, 0)::numeric(18, 3)::text,
+       GREATEST(sol.quantity - COALESCE(issue_progress.issued_quantity, 0), 0)::numeric(18, 3)::text,
+       sol.unit_price::text, (sol.quantity * sol.unit_price)::text
 FROM sales.order_lines sol
 JOIN inventory.items i ON i.tenant_id = sol.tenant_id AND i.id = sol.item_id
+LEFT JOIN LATERAL (
+    SELECT SUM(sil.quantity_issued) AS issued_quantity
+    FROM sales.issues si
+    JOIN sales.issue_lines sil
+      ON sil.tenant_id = si.tenant_id
+     AND sil.issue_id = si.id
+    WHERE si.sales_order_id = sol.sales_order_id
+      AND sil.item_id = sol.item_id
+      AND si.status = 'posted'
+) issue_progress ON true
 ORDER BY sol.created_at ASC, sol.id ASC
 `)
 		if err != nil {
@@ -124,7 +139,8 @@ ORDER BY sol.created_at ASC, sol.id ASC
 			var line SalesOrderLine
 			if err := lineRows.Scan(
 				&line.ID, &orderID, &line.ItemID, &line.ItemSKU, &line.ItemName,
-				&line.Quantity, &line.UnitPrice, &line.LineTotal,
+				&line.Quantity, &line.IssuedQuantity, &line.RemainingQuantity,
+				&line.UnitPrice, &line.LineTotal,
 			); err != nil {
 				return fmt.Errorf("scan sales order line: %w", err)
 			}
@@ -271,9 +287,22 @@ WHERE so.id = $1::uuid
 	order.Lines = make([]SalesOrderLine, 0)
 	rows, err := tx.Query(ctx, `
 SELECT sol.id::text, sol.item_id::text, i.sku, i.name,
-       sol.quantity::text, sol.unit_price::text, (sol.quantity * sol.unit_price)::text
+       sol.quantity::text,
+       COALESCE(issue_progress.issued_quantity, 0)::numeric(18, 3)::text,
+       GREATEST(sol.quantity - COALESCE(issue_progress.issued_quantity, 0), 0)::numeric(18, 3)::text,
+       sol.unit_price::text, (sol.quantity * sol.unit_price)::text
 FROM sales.order_lines sol
 JOIN inventory.items i ON i.tenant_id = sol.tenant_id AND i.id = sol.item_id
+LEFT JOIN LATERAL (
+    SELECT SUM(sil.quantity_issued) AS issued_quantity
+    FROM sales.issues si
+    JOIN sales.issue_lines sil
+      ON sil.tenant_id = si.tenant_id
+     AND sil.issue_id = si.id
+    WHERE si.sales_order_id = sol.sales_order_id
+      AND sil.item_id = sol.item_id
+      AND si.status = 'posted'
+) issue_progress ON true
 WHERE sol.sales_order_id = $1::uuid
 ORDER BY sol.created_at ASC, sol.id ASC
 `, orderID)
@@ -283,7 +312,11 @@ ORDER BY sol.created_at ASC, sol.id ASC
 	defer rows.Close()
 	for rows.Next() {
 		var line SalesOrderLine
-		if err := rows.Scan(&line.ID, &line.ItemID, &line.ItemSKU, &line.ItemName, &line.Quantity, &line.UnitPrice, &line.LineTotal); err != nil {
+		if err := rows.Scan(
+			&line.ID, &line.ItemID, &line.ItemSKU, &line.ItemName,
+			&line.Quantity, &line.IssuedQuantity, &line.RemainingQuantity,
+			&line.UnitPrice, &line.LineTotal,
+		); err != nil {
 			return SalesOrder{}, fmt.Errorf("scan sales order line: %w", err)
 		}
 		order.Lines = append(order.Lines, line)
@@ -292,9 +325,16 @@ ORDER BY sol.created_at ASC, sol.id ASC
 }
 
 func insertSalesOrderEventRecords(ctx context.Context, tx pgx.Tx, tenantID string, actorID string, order SalesOrder, action string) error {
-	eventType := "sales.order.created.v1"
-	if action == "confirm" {
+	eventType := "sales.order." + action + ".v1"
+	switch action {
+	case "create":
+		eventType = "sales.order.created.v1"
+	case "confirm":
 		eventType = "sales.order.confirmed.v1"
+	case "partially_fulfilled":
+		eventType = "sales.order.partially_fulfilled.v1"
+	case "fulfilled":
+		eventType = "sales.order.fulfilled.v1"
 	}
 	if err := audit.Insert(ctx, tx, audit.Entry{
 		TenantID: tenantID, ActorType: "tenant_user", ActorID: actorID,

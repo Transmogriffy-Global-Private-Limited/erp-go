@@ -17,6 +17,8 @@ permissions:
   - sales.order.read
   - sales.order.create
   - sales.order.approve
+  - sales.issue.read
+  - sales.issue.write
   - sales.invoice.read
   - sales.invoice.create
   - sales.invoice.cancel
@@ -43,12 +45,22 @@ api:
       path: /api/v1/sales/orders/{sales_order_id}/confirm
       permission: sales.order.approve
 
+    - method: GET
+      path: /api/v1/sales/issues
+      permission: sales.issue.read
+
+    - method: POST
+      path: /api/v1/sales/issues
+      permission: sales.issue.write
+
 database:
   schema: sales
   owns_tables:
     - sales.customers
     - sales.orders
     - sales.order_lines
+    - sales.issues
+    - sales.issue_lines
     - sales.invoices
 
 events:
@@ -56,6 +68,9 @@ events:
     - sales.customer.created.v1
     - sales.order.created.v1
     - sales.order.confirmed.v1
+    - sales.order.partially_fulfilled.v1
+    - sales.order.fulfilled.v1
+    - sales.issue.posted.v1
     - sales.invoice.created.v1
     - sales.invoice.cancelled.v1
 

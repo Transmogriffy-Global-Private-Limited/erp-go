@@ -111,7 +111,9 @@ VALUES
     ('$TenantID', '$AllowedRoleID', 'sales.customer.write'),
     ('$TenantID', '$AllowedRoleID', 'sales.order.read'),
     ('$TenantID', '$AllowedRoleID', 'sales.order.create'),
-    ('$TenantID', '$AllowedRoleID', 'sales.order.approve')
+    ('$TenantID', '$AllowedRoleID', 'sales.order.approve'),
+    ('$TenantID', '$AllowedRoleID', 'sales.issue.read'),
+    ('$TenantID', '$AllowedRoleID', 'sales.issue.write')
 ON CONFLICT (tenant_id, role_id, permission_id) DO NOTHING;
 
 INSERT INTO core.user_roles (
