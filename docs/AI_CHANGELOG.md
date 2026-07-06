@@ -1867,3 +1867,50 @@ Current next step:
 - Restart the APIs.
 - Run scripts/verify-purchase-receipts.ps1.
 - Run scripts/verify-all.ps1.
+
+## 2026-07-06
+
+### Added Sales Customers
+
+Added:
+
+- migrations/000018_sales_customers.up.sql
+- migrations/000018_sales_customers.down.sql
+- internal/modules/sales/customers.go
+- cmd/erp-api/sales_customers_handlers.go
+- scripts/verify-sales-customers.ps1
+- docs/decisions/0044-sales-customers.md
+
+Updated:
+
+- cmd/erp-api/app.go
+- cmd/erp-api/routes.go
+- manifests/sales.module.yaml
+- scripts/seed-dev-rbac.ps1
+- scripts/verify-erp-route-wiring.ps1
+- scripts/verify-all.ps1
+- README.md
+- docs/NATIVE_LOCAL_DEV.md
+- docs/PROJECT_STATE.md
+- docs/AI_CHANGELOG.md
+- AGENTS.md
+
+Behavior:
+
+- Sales Customers can be listed and created through session-authenticated Sales APIs.
+- Customer codes are normalized and tenant-scoped.
+- Duplicate customer codes return customer_code_exists.
+- Customer creation writes audit and outbox records atomically.
+- Focused verification covers tenant isolation, RBAC, entitlement, validation, audit, and outbox behavior.
+
+Workflow:
+
+- Human-facing PowerShell residue scans no longer assume rg is installed.
+- Agents must not modify the human environment to install rg without explicit permission.
+
+Current next step:
+
+- Apply migration 000018_sales_customers.
+- Restart the APIs.
+- Run scripts/verify-sales-customers.ps1.
+- Run scripts/verify-all.ps1.

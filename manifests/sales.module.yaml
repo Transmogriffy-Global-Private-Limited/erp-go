@@ -24,6 +24,14 @@ permissions:
 api:
   routes:
     - method: GET
+      path: /api/v1/sales/customers
+      permission: sales.customer.read
+
+    - method: POST
+      path: /api/v1/sales/customers
+      permission: sales.customer.write
+
+    - method: GET
       path: /api/v1/sales/orders
       permission: sales.order.read
 

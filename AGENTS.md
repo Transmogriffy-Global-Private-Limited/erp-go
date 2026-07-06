@@ -294,3 +294,15 @@ Be direct and operational.
 If a mistake is found, name the exact failed assumption, fix the whole class of issue, and avoid defensive explanations.
 
 The user is relying on the assistant to orchestrate the sprint. Missing affected files, verification scripts, or contract surfaces is considered a process failure.
+
+### Human-facing PowerShell scan commands
+
+Do not assume `rg` is installed in the human's PowerShell environment.
+
+For commands the human must run, use native PowerShell such as:
+
+- `Get-ChildItem -Recurse -File | Select-String -Pattern '<pattern>'`
+
+Do not install, configure, or modify the human PowerShell environment to add `rg` unless the human explicitly asks.
+
+Agents may still use available search tools internally.

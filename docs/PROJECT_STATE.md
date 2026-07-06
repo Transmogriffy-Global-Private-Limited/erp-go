@@ -1622,3 +1622,43 @@ Follow-up fix:
 Next recommended step:
 
 - Add Sales Orders and posted Sales Issues that create negative Inventory stock movements.
+
+## 2026-07-06 update
+
+Sales Customers were added.
+
+New endpoints:
+
+- GET /api/v1/sales/customers
+- POST /api/v1/sales/customers
+
+New table:
+
+- sales.customers
+
+New permissions:
+
+- sales.customer.read
+- sales.customer.write
+
+Behavior:
+
+- Customer codes are normalized to uppercase and unique per tenant.
+- Customer list/create uses ERP sessions, Sales entitlement, and tenant RBAC.
+- Customer rows use tenant-scoped transactions and PostgreSQL RLS.
+- Customer creation writes audit and outbox records atomically.
+
+New verification:
+
+- scripts/verify-sales-customers.ps1
+- scripts/verify-all.ps1 now includes Sales Customer verification.
+- The focused verifier covers validation, duplicates, RBAC, entitlement, tenant isolation, audit, and outbox behavior.
+
+Agent workflow update:
+
+- Human-facing PowerShell scan commands use Get-ChildItem and Select-String instead of assuming rg is installed.
+- Agents must not modify the human PowerShell environment to add rg without explicit permission.
+
+Next recommended step:
+
+- Add Sales Orders linked to Sales Customers and Inventory items, with draft/confirmed lifecycle and no stock mutation until fulfillment.

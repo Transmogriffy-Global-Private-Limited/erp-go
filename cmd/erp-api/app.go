@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/modules/inventory"
 	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/modules/purchase"
+	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/modules/sales"
 	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/auth"
 	platformmodules "github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/modules"
 	"github.com/Transmogriffy-Global-Private-Limited/erp-go/internal/platform/rbac"
@@ -15,6 +16,7 @@ type app struct {
 	rbac           rbac.Store
 	inventory      inventory.Store
 	purchase       purchase.Store
+	sales          sales.Store
 	tenantSessions auth.TenantSessionStore
 }
 
@@ -25,6 +27,7 @@ func newApp(pool *pgxpool.Pool) *app {
 		rbac:           rbac.NewStore(pool),
 		inventory:      inventory.NewStore(pool),
 		purchase:       purchase.NewStore(pool),
+		sales:          sales.NewStore(pool),
 		tenantSessions: auth.NewTenantSessionStore(pool),
 	}
 }

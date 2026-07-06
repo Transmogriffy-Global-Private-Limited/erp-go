@@ -27,6 +27,7 @@ This repository currently contains the first bootable backend spine:
 - approved-order-backed Purchase receiving with over-receipt prevention
 - derived Purchase Order receipt progress and lifecycle states
 - compensating Purchase Receipt reversal with immutable stock history
+- tenant-owned Sales Customer master data
 - audit and outbox writes on Inventory item creation
 - DB-backed outbox worker v1
 - master verification script
@@ -61,6 +62,7 @@ Individual checks:
 .\scripts\verify-outbox-worker.ps1
 .\scripts\verify-purchase-suppliers.ps1
 .\scripts\verify-purchase-orders.ps1
+.\scripts\verify-sales-customers.ps1
 
 ## Run locally
 
