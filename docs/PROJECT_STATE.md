@@ -1862,3 +1862,33 @@ New verification:
 - `scripts/verify-all.ps1` includes FE setup-helper verification.
 
 No API, migration, or production authentication contract changed in this slice.
+
+## 2026-07-22 update — Granular frontend integration guide
+
+Frontend onboarding and the current HTTP contract are consolidated in:
+
+- `docs/FE_INTEGRATION_GUIDE.md`
+
+The guide teaches:
+
+- a progressive student/consumer/developer mental model for one reader wearing all three hats
+- the precise distinction between a platform superadmin, tenant administrator, and module-local HRMS roles
+- tenant-ID meaning, trust boundary, bootstrap provenance, terminal/object/manifest retrieval, and FE usage
+- the separation between tenant ERP sessions and platform-superadmin sessions
+- opaque session handling and reload validation
+- Vite/reverse-proxy routing required by the current lack of browser CORS middleware
+- tenant auth bootstrap, module-aware navigation, and action-level permission failures
+- typed TypeScript request/error wrappers
+- every currently wired ERP and control-plane endpoint
+- every current ERP permission and response data key
+- valid request bodies for platform, Inventory, Purchase, and Sales writes
+- Purchase and Sales lifecycle behavior and compensating reversals
+- security, error UX, and first-integration acceptance checklists
+- the explicit boundary that external HRMS/custom-SaaS handoff endpoints do not exist yet
+
+New drift verification:
+
+- `scripts/verify-fe-integration-docs.ps1` extracts current backend route literals and ERP permissions and requires them to remain documented.
+- `scripts/verify-all.ps1` includes the FE integration documentation verification.
+
+No runtime API behavior changed in this documentation slice.

@@ -48,6 +48,9 @@ Invoke-Step -Name "Server shutdown wiring verification" -Action {
 Invoke-Step -Name "FE local setup helper verification" -Action {
   & (Join-Path $PSScriptRoot "verify-fe-dev-setup.ps1")
 }
+Invoke-Step -Name "FE integration documentation verification" -Action {
+  & (Join-Path $PSScriptRoot "verify-fe-integration-docs.ps1")
+}
 
 Invoke-Step -Name "Database connectivity" -Action {
   & (Join-Path $PSScriptRoot "db-check.ps1") -EnvFile $EnvFile

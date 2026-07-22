@@ -82,6 +82,8 @@ One-command FE integration setup:
 
 This applies pending migrations, seeds a tenant plus allowed/no-access users and a platform superadmin, starts both APIs, validates the credentials, and writes the handoff manifest to `.local/fe-integration.json`.
 
+Frontend developers should then follow the [Frontend Integration Guide](docs/FE_INTEGRATION_GUIDE.md). It explains the two authentication planes, browser proxying, session restoration, typed request clients, every current endpoint and permission, write payloads, lifecycle behavior, and the current external-SaaS handoff boundary.
+
 Control plane API:
 
 .\scripts\run-control-plane-api.ps1

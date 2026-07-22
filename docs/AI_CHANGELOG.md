@@ -2125,3 +2125,29 @@ Verification:
 - Run `scripts/verify-fe-dev-setup.ps1` for the static helper contract.
 - Run `scripts/setup-fe-dev.ps1` for the live bootstrap.
 - Run `scripts/verify-all.ps1` for the complete suite.
+
+## 2026-07-22
+
+### Added granular frontend integration teaching guide
+
+Added:
+
+- `docs/FE_INTEGRATION_GUIDE.md`
+- `scripts/verify-fe-integration-docs.ps1`
+
+Updated:
+
+- README and native local-development documentation now direct frontend developers to the guide after bootstrap.
+- `scripts/verify-all.ps1` now checks FE documentation coverage.
+- Project state records the frontend integration contract and its known boundaries.
+
+The guide combines architecture explanation with the live contracts for tenant/platform sessions, Vite proxying, TypeScript clients, session restoration, route/module/permission guards, all current endpoints, write DTOs, document lifecycles, error UX, and security review.
+
+It now opens with progressive explanations for the same reader acting as student, product consumer, and developer. It defines platform superadmin authority versus tenant/module authority and traces the tenant ID from the setup parameter through seeding, live validation, terminal output, returned PowerShell object, handoff manifest, login request, and protected-request headers.
+
+It explicitly records current gaps instead of presenting future behavior as available: there is no permission-discovery endpoint, browser CORS middleware, Accounting business API, or external HRMS/custom-SaaS handoff exchange yet.
+
+Verification:
+
+- Run `scripts/verify-fe-integration-docs.ps1`.
+- Run `scripts/verify-all.ps1`.

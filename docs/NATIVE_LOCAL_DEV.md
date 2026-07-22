@@ -51,6 +51,8 @@ For a fast rerun against already-migrated databases and APIs that are already ru
 
 The script resets the seeded development passwords on each run. Do not use these defaults outside local development.
 
+After bootstrap, use [FE_INTEGRATION_GUIDE.md](FE_INTEGRATION_GUIDE.md) as the frontend implementation contract. It combines conceptual onboarding, TypeScript integration examples, endpoint/permission coverage, valid write payloads, business lifecycles, and error-handling rules.
+
 ## Temporary local identity
 
 Control-plane APIs currently require:
@@ -96,6 +98,7 @@ Individual checks:
 
 .\scripts\db-check.ps1
 .\scripts\verify-fe-dev-setup.ps1
+.\scripts\verify-fe-integration-docs.ps1
 .\scripts\verify-control-plane-auth.ps1
 .\scripts\verify-tenant-isolation.ps1
 .\scripts\verify-module-entitlement.ps1
