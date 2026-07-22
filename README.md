@@ -74,6 +74,14 @@ Individual checks:
 
 ## Run locally
 
+One-command FE integration setup:
+
+```powershell
+.\scripts\setup-fe-dev.ps1
+```
+
+This applies pending migrations, seeds a tenant plus allowed/no-access users and a platform superadmin, starts both APIs, validates the credentials, and writes the handoff manifest to `.local/fe-integration.json`.
+
 Control plane API:
 
 .\scripts\run-control-plane-api.ps1

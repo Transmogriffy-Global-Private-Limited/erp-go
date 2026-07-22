@@ -1,6 +1,7 @@
 param(
   [string] $BaseUrl = "http://localhost:8080",
   [string] $ControlPlaneUrl = "http://localhost:8081",
+  [string] $EnvFile = ".env",
   [int] $ErpPort = 8080,
   [int] $ControlPlanePort = 8081,
   [int] $TimeoutSeconds = 30
@@ -67,10 +68,12 @@ function Wait-Health {
 function Start-ApiWindow {
   param(
     [string] $Title,
-    [string] $ScriptPath
+    [string] $ScriptPath,
+    [string] $EnvFile
   )
 
   $pwshPath = (Get-Process -Id $PID).Path
+  $escapedEnvFile = $EnvFile.Replace("'", "''")
 
   Start-Process `
     -FilePath $pwshPath `
@@ -79,7 +82,7 @@ function Start-ApiWindow {
       "-NoExit",
       "-ExecutionPolicy", "Bypass",
       "-Command",
-      "`$Host.UI.RawUI.WindowTitle = '$Title'; cd '$RepoRoot'; & '$ScriptPath'"
+      "`$Host.UI.RawUI.WindowTitle = '$Title'; cd '$RepoRoot'; & '$ScriptPath' -EnvFile '$escapedEnvFile'"
     ) | Out-Null
 }
 
@@ -90,10 +93,16 @@ Stop-PortProcess -Port $ErpPort -Name "erp-api"
 Start-Sleep -Seconds 1
 
 Write-Host "Starting fresh control-plane-api..."
-Start-ApiWindow -Title "erp-go control-plane-api" -ScriptPath (Join-Path $RepoRoot "scripts/run-control-plane-api.ps1")
+Start-ApiWindow `
+  -Title "erp-go control-plane-api" `
+  -ScriptPath (Join-Path $RepoRoot "scripts/run-control-plane-api.ps1") `
+  -EnvFile $EnvFile
 
 Write-Host "Starting fresh erp-api..."
-Start-ApiWindow -Title "erp-go erp-api" -ScriptPath (Join-Path $RepoRoot "scripts/run-erp-api.ps1")
+Start-ApiWindow `
+  -Title "erp-go erp-api" `
+  -ScriptPath (Join-Path $RepoRoot "scripts/run-erp-api.ps1") `
+  -EnvFile $EnvFile
 
 Write-Host "Waiting for APIs..."
 Wait-Health -Url "$ControlPlaneUrl/healthz" -Name "control-plane-api" -TimeoutSeconds $TimeoutSeconds

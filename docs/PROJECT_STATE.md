@@ -1830,3 +1830,35 @@ New verification:
 
 - scripts/verify-server-shutdown-wiring.ps1
 - scripts/verify-all.ps1 includes server shutdown wiring verification.
+
+## 2026-07-22 update — One-command FE local integration setup
+
+Local FE integration now has one idempotent bootstrap command:
+
+```powershell
+.\scripts\setup-fe-dev.ps1
+```
+
+Behavior:
+
+- Creates `.env` from `.env.example` only when the default `.env` is missing.
+- Checks all three configured database connections.
+- Applies every pending up migration in filename order.
+- Seeds and resets the local platform superadmin, tenant, tenant module entitlements, allowed user, no-access user, roles, and permissions.
+- Starts both Go APIs and waits for API and database health.
+- Validates tenant and platform credentials against the live APIs.
+- Writes a versioned FE handoff manifest to the gitignored `.local/fe-integration.json` path.
+- Revokes validation sessions by default; `-IncludeSessionTokens` keeps and returns live local sessions when explicitly requested.
+
+Composition changes:
+
+- `apply-migration.ps1` returns to its caller when an idempotent migration is skipped instead of terminating the parent PowerShell process.
+- `restart-local-apis.ps1` and `ensure-local-apis.ps1` forward the selected environment file to API launchers.
+- Every focused verifier that starts the APIs forwards its selected environment file through the same startup chain.
+
+New verification:
+
+- `scripts/verify-fe-dev-setup.ps1`
+- `scripts/verify-all.ps1` includes FE setup-helper verification.
+
+No API, migration, or production authentication contract changed in this slice.

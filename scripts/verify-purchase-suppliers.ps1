@@ -34,7 +34,8 @@ function Invoke-ScalarSql {
 
 & (Join-Path $PSScriptRoot "ensure-local-apis.ps1") `
   -BaseUrl $BaseUrl `
-  -ControlPlaneUrl $ControlPlaneUrl
+  -ControlPlaneUrl $ControlPlaneUrl `
+  -EnvFile $EnvFile
 
 $PlatformHeaders = & (Join-Path $PSScriptRoot "Get-PlatformSessionHeaders.ps1") `
   -ControlPlaneUrl $ControlPlaneUrl `

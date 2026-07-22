@@ -1,6 +1,7 @@
 param(
   [string] $BaseUrl = "http://localhost:8080",
-  [string] $ControlPlaneUrl = "http://localhost:8081"
+  [string] $ControlPlaneUrl = "http://localhost:8081",
+  [string] $EnvFile = ".env"
 )
 
 $ErrorActionPreference = "Stop"
@@ -12,6 +13,7 @@ if ($env:ERP_GO_LOCAL_APIS_RESTARTED -eq "1") {
 
 & (Join-Path $PSScriptRoot "restart-local-apis.ps1") `
   -BaseUrl $BaseUrl `
-  -ControlPlaneUrl $ControlPlaneUrl
+  -ControlPlaneUrl $ControlPlaneUrl `
+  -EnvFile $EnvFile
 
 $env:ERP_GO_LOCAL_APIS_RESTARTED = "1"

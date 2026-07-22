@@ -10,6 +10,47 @@ Use .env as the local machine-specific file.
 
 Never commit .env.
 
+## One-command FE integration setup
+
+Run:
+
+```powershell
+.\scripts\setup-fe-dev.ps1
+```
+
+The helper is idempotent and performs the complete local FE handoff:
+
+1. Creates `.env` from `.env.example` only when `.env` is absent. It never overwrites an existing environment file.
+2. Checks migration, control-plane, and ERP database connectivity.
+3. Applies every pending `*.up.sql` migration in filename order.
+4. Seeds the platform superadmin, default tenant, enabled modules, allowed tenant user, no-access tenant user, roles, and permissions.
+5. Builds, starts, and health-checks both Go APIs in interactive PowerShell windows.
+6. Validates tenant login, `/auth/me`, tenant modules, platform login, and platform modules.
+7. Writes `.local/fe-integration.json` and returns the same manifest object to PowerShell.
+
+The manifest contains:
+
+- ERP and control-plane base URLs and health URLs
+- tenant ID, slug, names, and enabled modules
+- tenant and platform login/logout endpoint URLs
+- required session header names
+- allowed tenant, no-access tenant, and platform-superadmin IDs, emails, and passwords
+- the platform module list
+
+The output contains local development passwords and is covered by the existing `.local/` gitignore rule. Validation sessions are revoked by default. To give FE immediately usable session tokens as well, run:
+
+```powershell
+.\scripts\setup-fe-dev.ps1 -IncludeSessionTokens
+```
+
+For a fast rerun against already-migrated databases and APIs that are already running:
+
+```powershell
+.\scripts\setup-fe-dev.ps1 -SkipMigrations -SkipRestart
+```
+
+The script resets the seeded development passwords on each run. Do not use these defaults outside local development.
+
 ## Temporary local identity
 
 Control-plane APIs currently require:
@@ -54,6 +95,7 @@ Run all checks:
 Individual checks:
 
 .\scripts\db-check.ps1
+.\scripts\verify-fe-dev-setup.ps1
 .\scripts\verify-control-plane-auth.ps1
 .\scripts\verify-tenant-isolation.ps1
 .\scripts\verify-module-entitlement.ps1

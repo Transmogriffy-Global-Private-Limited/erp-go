@@ -20,7 +20,7 @@ function Invoke-ScalarSql {
   return (($Output | Select-Object -Last 1) -join "").Trim()
 }
 
-& (Join-Path $PSScriptRoot "ensure-local-apis.ps1") -BaseUrl $BaseUrl -ControlPlaneUrl $ControlPlaneUrl
+& (Join-Path $PSScriptRoot "ensure-local-apis.ps1") -BaseUrl $BaseUrl -ControlPlaneUrl $ControlPlaneUrl -EnvFile $EnvFile
 $PlatformHeaders = & (Join-Path $PSScriptRoot "Get-PlatformSessionHeaders.ps1") -ControlPlaneUrl $ControlPlaneUrl -EnvFile $EnvFile
 
 Write-Host "Seeding tenants and RBAC..."

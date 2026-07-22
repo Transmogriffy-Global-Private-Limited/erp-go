@@ -11,7 +11,8 @@ Set-Location $RepoRoot
 
 & (Join-Path $PSScriptRoot "ensure-local-apis.ps1") `
   -BaseUrl $BaseUrl `
-  -ControlPlaneUrl $ControlPlaneUrl
+  -ControlPlaneUrl $ControlPlaneUrl `
+  -EnvFile $EnvFile
 
 function Invoke-Step {
   param(
@@ -43,6 +44,9 @@ Invoke-Step -Name "ERP route wiring verification" -Action {
 }
 Invoke-Step -Name "Server shutdown wiring verification" -Action {
   & (Join-Path $PSScriptRoot "verify-server-shutdown-wiring.ps1")
+}
+Invoke-Step -Name "FE local setup helper verification" -Action {
+  & (Join-Path $PSScriptRoot "verify-fe-dev-setup.ps1")
 }
 
 Invoke-Step -Name "Database connectivity" -Action {

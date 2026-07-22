@@ -2094,3 +2094,34 @@ Verification:
 
 - Run scripts/verify-server-shutdown-wiring.ps1.
 - Start each continuous launcher and press Ctrl+C once to confirm it exits.
+
+## 2026-07-22
+
+### Added one-command FE local integration setup
+
+Added:
+
+- `scripts/setup-fe-dev.ps1`
+- `scripts/verify-fe-dev-setup.ps1`
+- `docs/decisions/0054-fe-local-integration-bootstrap.md`
+
+Changed:
+
+- `scripts/apply-migration.ps1` now composes safely inside an aggregate setup process when a migration is already applied.
+- `scripts/restart-local-apis.ps1` and `scripts/ensure-local-apis.ps1` now forward `-EnvFile` into the API launchers.
+- Every focused verifier that invokes `ensure-local-apis.ps1` now forwards its own `-EnvFile` value.
+- `scripts/verify-all.ps1` now includes the focused FE setup-helper contract check and forwards its environment file to API startup.
+- README and native local-development documentation now describe the FE handoff workflow.
+
+Behavior:
+
+- One command checks databases, applies pending migrations, seeds local identities and entitlements, starts both APIs, validates login flows, and emits `.local/fe-integration.json`.
+- The manifest returns base URLs, tenant and user IDs, test credentials, auth endpoints, required headers, and module lists.
+- Temporary validation sessions are revoked unless `-IncludeSessionTokens` is explicitly supplied.
+- Existing `.env` files are not overwritten and generated credential artifacts remain gitignored.
+
+Verification:
+
+- Run `scripts/verify-fe-dev-setup.ps1` for the static helper contract.
+- Run `scripts/setup-fe-dev.ps1` for the live bootstrap.
+- Run `scripts/verify-all.ps1` for the complete suite.

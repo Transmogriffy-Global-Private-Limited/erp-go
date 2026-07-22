@@ -51,12 +51,12 @@ $Applied = ($AppliedOutput -join "").Trim()
 
 if ($Direction -eq "up" -and $Applied -eq "1") {
   Write-Host "Migration already applied: $Name"
-  exit 0
+  return
 }
 
 if ($Direction -eq "down" -and $Applied -ne "1") {
   Write-Host "Migration is not marked as applied, skipping rollback: $Name"
-  exit 0
+  return
 }
 
 Write-Host "Applying migration: $MigrationPath"

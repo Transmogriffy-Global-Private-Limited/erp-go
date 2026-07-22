@@ -14,7 +14,8 @@ Set-Location $RepoRoot
 
 & (Join-Path $PSScriptRoot "ensure-local-apis.ps1") `
   -BaseUrl $BaseUrl `
-  -ControlPlaneUrl $ControlPlaneUrl
+  -ControlPlaneUrl $ControlPlaneUrl `
+  -EnvFile $EnvFile
 
 Write-Host "Seeding tenant A..."
 & (Join-Path $PSScriptRoot "seed-dev-tenant.ps1") `

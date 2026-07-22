@@ -9,7 +9,7 @@ $ErrorActionPreference="Stop";$Root=Resolve-Path(Join-Path $PSScriptRoot "..");S
 . (Join-Path $PSScriptRoot "Import-DotEnv.ps1") -Path (Join-Path $Root $EnvFile)
 if(-not $env:MIGRATION_DATABASE_URL){throw "MIGRATION_DATABASE_URL is missing."}
 function Scalar([string]$Sql){$o=@(psql $env:MIGRATION_DATABASE_URL -v ON_ERROR_STOP=1 -At -c $Sql);if($LASTEXITCODE-ne 0){throw "SQL failed."};return(($o|Select-Object -Last 1)-join"").Trim()}
-& (Join-Path $PSScriptRoot "ensure-local-apis.ps1") -BaseUrl $BaseUrl -ControlPlaneUrl $ControlPlaneUrl
+& (Join-Path $PSScriptRoot "ensure-local-apis.ps1") -BaseUrl $BaseUrl -ControlPlaneUrl $ControlPlaneUrl -EnvFile $EnvFile
 $Platform=& (Join-Path $PSScriptRoot "Get-PlatformSessionHeaders.ps1") -ControlPlaneUrl $ControlPlaneUrl -EnvFile $EnvFile
 & (Join-Path $PSScriptRoot "seed-dev-tenant.ps1") -TenantID $TenantAID -Slug "dev-tenant-a" -EnvFile $EnvFile
 & (Join-Path $PSScriptRoot "seed-dev-rbac.ps1") -TenantID $TenantAID -EnvFile $EnvFile
