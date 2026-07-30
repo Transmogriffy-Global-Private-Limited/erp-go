@@ -1,0 +1,163 @@
+openapi: 3.0.3
+info:
+  title: ERP API
+  version: 0.1.0
+  description: |-
+    Minimal ERP backend foundation. Step 01A exposes only liveness and,
+    when explicitly enabled, this contract and its interactive documentation.
+servers:
+  - url: http://127.0.0.1:8080
+    description: Default loopback-only local server
+tags:
+  - name: Operations
+    description: Process-level operational endpoints.
+  - name: API documentation
+    description: Optional documentation endpoints controlled by API_DOCS_ENABLED.
+paths:
+  /healthz:
+    get:
+      operationId: getHealth
+      tags:
+        - Operations
+      summary: Check process liveness
+      description: |-
+        Returns success when the HTTP process can serve requests. This endpoint
+        does not claim database or dependency readiness.
+      security: []
+      responses:
+        "200":
+          description: The HTTP process is alive.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+              example:
+                status: ok
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+  /openapi.yaml:
+    get:
+      operationId: getOpenAPI
+      tags:
+        - API documentation
+      summary: Download the authoritative OpenAPI document
+      description: |-
+        Available only when API_DOCS_ENABLED=true. The returned bytes are the
+        same embedded contract used by the interactive documentation.
+      security: []
+      responses:
+        "200":
+          description: The authoritative OpenAPI 3.0 YAML document.
+          content:
+            application/yaml:
+              schema:
+                type: string
+                format: binary
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+  /docs:
+    get:
+      operationId: redirectAPIDocs
+      tags:
+        - API documentation
+      summary: Redirect to the canonical documentation URL
+      description: Available only when API_DOCS_ENABLED=true.
+      security: []
+      responses:
+        "308":
+          description: Permanent redirect to /docs/.
+          headers:
+            Location:
+              description: Canonical interactive documentation URL.
+              schema:
+                type: string
+              example: /docs/
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+  /docs/:
+    get:
+      operationId: getAPIDocs
+      tags:
+        - API documentation
+      summary: Open interactive API documentation
+      description: |-
+        Serves Swagger UI and its embedded local assets. Available only when
+        API_DOCS_ENABLED=true.
+      security: []
+      responses:
+        "200":
+          description: Swagger UI HTML or an embedded UI asset.
+          content:
+            text/html:
+              schema:
+                type: string
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - error
+      properties:
+        error:
+          $ref: "#/components/schemas/Error"
+    Error:
+      type: object
+      additionalProperties: false
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Stable machine-readable error code.
+          example: not_found
+        message:
+          type: string
+          description: Human-readable error message without sensitive details.
+          example: The requested resource was not found.
+  responses:
+    NotFound:
+      description: The route is unavailable or documentation is disabled.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error:
+              code: not_found
+              message: The requested resource was not found.
+    MethodNotAllowed:
+      description: The route exists but does not accept this HTTP method.
+      headers:
+        Allow:
+          description: Allowed HTTP method.
+          schema:
+            type: string
+          example: GET
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error:
+              code: method_not_allowed
+              message: The request method is not allowed for this resource.

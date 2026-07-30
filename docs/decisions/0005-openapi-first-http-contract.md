@@ -42,9 +42,10 @@ The same file drives:
 - route/contract drift detection;
 - examples and frontend integration guidance.
 
-Step 01 will implement planned local routes `/docs` and `/openapi.yaml` behind
-`API_DOCS_ENABLED`. When disabled, both documentation routes are unavailable.
-Step 01 must document the actual default and verify both states on loopback.
+Step 01A implemented local routes `/docs`, `/docs/`, and `/openapi.yaml` behind
+`API_DOCS_ENABLED`. The default is `false`. When disabled, the UI, embedded
+assets, and raw schema routes are unavailable. Focused tests and the full
+PowerShell verifier cover both states on loopback.
 
 Do not maintain a second independent schema and do not manually edit generated
 artifacts if generation is later introduced.

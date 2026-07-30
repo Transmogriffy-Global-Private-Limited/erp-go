@@ -8,20 +8,31 @@ through a narrow ERP-owned adapter and the same canonical ERP HRMS API.
 
 ## Current status
 
-The repository has completed **Step 00: the verified planning and
-repository-memory baseline**.
+The repository has completed **Step 00** and verified **Step 01A: the bootable,
+documented API process**.
 
-At this point:
+The implemented foundation provides:
 
-- no Go module or application binary exists;
-- no API route is implemented;
-- no ERP database schema or migration exists;
-- no provider adapter is implemented;
-- no setup or verification script exists;
-- no service has been started or deployed from this rebuild.
+- one Go `erp-api` process with loopback-only typed configuration;
+- graceful shutdown and explicit HTTP timeouts;
+- `GET /healthz` and canonical JSON errors;
+- an authoritative OpenAPI contract;
+- embedded Swagger UI and raw schema routes behind `API_DOCS_ENABLED`;
+- focused tests and one PowerShell verification entry point.
 
-The documentation describes approved direction and proposed implementation
-slices. It must not be read as evidence that those behaviors already exist.
+It does not yet provide PostgreSQL, readiness, migrations, identity, tenancy,
+RBAC, HRMS behavior, or a deployment.
+
+## Local verification
+
+From PowerShell at the repository root:
+
+```powershell
+.\scripts\verify-all.ps1
+```
+
+See [`docs/guides/LOCAL_DEVELOPMENT.md`](docs/guides/LOCAL_DEVELOPMENT.md) for
+configuration and local run instructions.
 
 ## Architectural direction
 
@@ -60,8 +71,8 @@ Important documents include:
 
 ## Development gate
 
-Step 00 documentation is complete. Application implementation starts only after
-the human explicitly approves Step 01.
+Step 01A is verified. PostgreSQL, readiness, identity, tenancy, RBAC, HRMS, and
+later implementation remain unapproved.
 
 Nothing should be committed, pushed, deployed, or applied to a database without
 separate explicit permission.

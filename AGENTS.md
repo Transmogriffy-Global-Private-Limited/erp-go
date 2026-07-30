@@ -6,10 +6,11 @@ These rules apply to the complete `erp-go` repository. They supplement the
 workspace-level agent instructions and may not weaken their safety, Git,
 documentation, or verification requirements.
 
-The repository is a KISS-first rebuild of a native ERP. It is currently in a
-documentation-only planning state. Do not infer that an API, database schema,
-module, migration, script, or integration exists unless `docs/PROJECT_STATE.md`
-states that it is implemented and identifies its verification evidence.
+The repository is a KISS-first rebuild of a native ERP. Its minimal Step 01A
+HTTP foundation is implemented and verified. Do not infer that a database
+schema, business module, migration, or integration exists unless
+`docs/PROJECT_STATE.md` states that it is implemented and identifies its
+verification evidence.
 
 ## Required project memory
 
@@ -30,12 +31,13 @@ and obtain human approval before a material architecture or scope change.
 
 ## Current implementation gate
 
-Step 00 persists the approved plan and decisions. It does not authorize Step 01
-or any later implementation.
+Step 00 and Step 01A are complete. No later implementation slice is currently
+approved.
 
-Do not add application code, migrations, dependencies, runtime configuration,
-or deployment assets until the human explicitly approves the corresponding
-implementation slice.
+Step 01A does not authorize PostgreSQL, readiness, migrations, identity,
+tenancy, RBAC, HRMS providers, deployment, or any later slice. Do not expand
+application code, dependencies, runtime configuration, or operational assets
+beyond the active approved slice.
 
 ## Product boundary
 
@@ -137,18 +139,30 @@ Integration documentation:
 
 - `docs/integrations/`
 
-Planned authoritative REST contract:
+Educational guides:
+
+- `docs/guides/`
+
+Human-readable programmatic contracts:
+
+- `docs/contracts/`
+
+Authoritative REST contract:
 
 - `api/openapi/v1/openapi.yaml`
 
-Step 01 must create the OpenAPI source, its validation and drift checks, and
-Swagger UI from that same document. Do not manually maintain a second API
-schema. Contract, implementation, examples, tests, and frontend guidance must
-change in the same slice.
+The embedded application document, raw schema route, contract validation, and
+Swagger UI use this same source. Do not manually maintain a second API schema.
+Contract, implementation, examples, tests, and frontend guidance must change in
+the same slice.
 
-Planned local documentation routes are `/docs` and `/openapi.yaml`, controlled
-by `API_DOCS_ENABLED`. Their exact implemented behavior and default must be
-recorded and verified during Step 01 before being described as operational.
+The local documentation routes are `/docs`, `/docs/`, and `/openapi.yaml`,
+controlled by `API_DOCS_ENABLED`. The default is `false`; the enabled and
+disabled states must remain covered by the full verifier.
+
+Canonical verification command:
+
+- `scripts/verify-all.ps1`
 
 ## Development workflow
 

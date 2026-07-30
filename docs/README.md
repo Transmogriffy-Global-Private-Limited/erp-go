@@ -25,6 +25,8 @@ Documents distinguish approved plans from implemented and verified behavior.
 | What is the detailed rebuild design? | [`plans/ERP_REBUILD_AND_HRMS_PROVIDER_PLAN.md`](plans/ERP_REBUILD_AND_HRMS_PROVIDER_PLAN.md) |
 | Why were major architecture choices made? | [`decisions/README.md`](decisions/README.md) |
 | How will the house HRMS integrate? | [`integrations/HOUSE_HRMS.md`](integrations/HOUSE_HRMS.md) |
+| How do I run and verify the current API locally? | [`guides/LOCAL_DEVELOPMENT.md`](guides/LOCAL_DEVELOPMENT.md) |
+| What is the implemented HTTP contract? | [`contracts/HTTP_API.md`](contracts/HTTP_API.md) |
 
 ## Architecture decisions
 
@@ -34,17 +36,17 @@ Documents distinguish approved plans from implemented and verified behavior.
 - [`decisions/0004-configuration-and-external-session-security.md`](decisions/0004-configuration-and-external-session-security.md)
 - [`decisions/0005-openapi-first-http-contract.md`](decisions/0005-openapi-first-http-contract.md)
 
-## Planned machine-readable contract
+## Machine-readable contract
 
-Step 01 will create the authoritative REST contract at:
+The authoritative REST contract is:
 
 ```text
 api/openapi/v1/openapi.yaml
 ```
 
-That document will be the single schema used for validation, raw serving,
-Swagger UI, drift detection, examples, and frontend integration. It does not
-exist during Step 00 because no HTTP API is implemented yet.
+That document is embedded into the binary and is the single schema used for
+validation, raw serving, Swagger UI, drift detection, examples, and future
+frontend integration.
 
 ## Documentation ownership
 
@@ -58,8 +60,9 @@ exist during Step 00 because no HTTP API is implemented yet.
 - `decisions/` owns durable architectural decisions and their consequences.
 - `integrations/` owns cross-system boundaries, contracts, security, failure,
   and verification expectations.
-- Future `guides/` and `contracts/` documents should be added only when real
-  implemented behavior needs them; do not create ceremonial empty structures.
+- `guides/` teaches implemented development and operational workflows.
+- `contracts/` explains human-readable semantics for implemented programmatic
+  boundaries while linking to the authoritative machine schema.
 
 When documents overlap, link to the canonical owner instead of duplicating
 facts that can drift.

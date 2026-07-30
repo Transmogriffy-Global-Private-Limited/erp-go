@@ -170,14 +170,14 @@ Verification:
 
 ### Feature: Step 01 minimal bootable ERP foundation
 
-Status: Proposed
+Status: In Progress
 
 Phase: 1
 
 Depends on:
 
-- verified Step 00;
-- explicit human approval for Step 01.
+- verified Step 00 — satisfied;
+- explicit human approval for Step 01A — satisfied on 2026-07-30.
 
 Objective:
 
@@ -185,8 +185,32 @@ Create one loopback-safe Go API with typed configuration, PostgreSQL
 connectivity, health/readiness, graceful lifecycle, canonical JSON errors, an
 authoritative OpenAPI document, and environment-controlled Swagger/raw schema.
 
-Acceptance criteria and detailed affected surfaces are defined in the detailed
-rebuild plan. No implementation is currently authorized.
+Implementation slices:
+
+1. **Step 01A — Verified:** Go module, one API process, typed loopback
+   configuration, `/healthz`, canonical errors, graceful shutdown,
+   specification-first OpenAPI, embedded Swagger UI, raw schema toggle, tests,
+   and `scripts/verify-all.ps1`.
+2. **Step 01B — Proposed:** PostgreSQL connectivity, migrations, `/readyz`, and
+   idempotent development setup. Step 01B is not authorized.
+
+Step 01A deliberately excludes PostgreSQL and `/readyz`; readiness becomes
+truthful only when a required dependency exists.
+
+Step 01A acceptance:
+
+- the API defaults to `127.0.0.1:8080` and rejects wildcard bind hosts;
+- invalid configuration fails before listening;
+- `GET /healthz` returns canonical JSON success;
+- unknown routes return the canonical JSON error envelope;
+- `/docs` and `/openapi.yaml` are available only when
+  `API_DOCS_ENABLED=true`;
+- Swagger assets are embedded and require no runtime CDN or Node toolchain;
+- the authoritative OpenAPI document parses, validates, and covers every
+  implemented public route;
+- graceful shutdown and loopback smoke verification pass;
+- `go test ./...`, build, the full PowerShell verifier, residue scanning, and
+  Git hygiene checks pass.
 
 ### Feature: Step 02 ERP identity and tenancy
 
@@ -306,33 +330,32 @@ The tentative order is not implementation authorization.
 
 Current phase:
 
-- Phase 0 — Durable project direction
+- Phase 1 — Bootable and verifiable foundation
 
 Active feature:
 
-- None
+- None. Step 01A is verified; Step 01B is proposed but not approved.
 
 Current implementation slice:
 
-- None. Step 00 is complete and no application slice is authorized.
+- None.
 
 Last completed slice:
 
-- Step 00 repository memory, verified on 2026-07-30.
+- Step 01A — Bootable, documented API process, verified on 2026-07-30.
 
 Next expected slice:
 
-- Step 01 minimal bootable ERP foundation, only after explicit human approval.
+- Await explicit approval and final Step 01B design decisions.
 
 Blocked by:
 
 - No technical blocker recorded.
-- All implementation is gated by a new explicit approval.
+- Step 01B and later implementation remain gated by new explicit approval.
 
 ## Next approved work
 
-None. Step 00 is verified. Step 01 remains proposed and no application
-implementation is currently approved.
+None. Step 01B and all later application work remain unapproved.
 
 ## Risks and unresolved decisions
 
@@ -342,15 +365,15 @@ Resolve before the dependent implementation slice:
 - tenant discovery during ERP login;
 - whether first-admin bootstrap refers to tenant administration, platform
   administration, or two distinct workflows;
-- canonical error codes and error envelope details;
+- the business-route error taxonomy beyond the implemented Step 01A envelope;
 - the initial HRMS capability representation and connection command paths;
 - the migration tool and migration-verification mechanism;
 - external-session encryption envelope, key identification, rotation, and
   invalidation behavior;
 - provider-switch migration and reconciliation rules;
 - audit retention and sensitive metadata policy;
-- the final implemented defaults and routes for health, readiness, Swagger, and
-  raw OpenAPI serving.
+- the Step 01B PostgreSQL configuration, migration mechanism, and truthful
+  readiness behavior.
 
 These are recorded decisions to make, not permission to improvise during an
 unrelated slice.

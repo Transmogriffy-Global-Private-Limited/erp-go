@@ -248,7 +248,7 @@ configuration must fail before the server begins accepting traffic.
 
 ## 12. HTTP contract and documentation
 
-The planned authoritative source is:
+The authoritative source is:
 
 ```text
 api/openapi/v1/openapi.yaml
@@ -258,12 +258,15 @@ It must cover every implemented HTTP endpoint, authentication scheme,
 authorization expectation, trusted scope, request, response, validation,
 canonical error, example, side effect, and relevant idempotency behavior.
 
-Swagger UI and raw OpenAPI serving use that exact document. Step 01 will
-implement and verify an `API_DOCS_ENABLED` toggle. When disabled, both routes
-must be unavailable rather than merely hidden from navigation.
+Swagger UI and raw OpenAPI serving use that exact embedded document. Step 01A
+implemented and verified an `API_DOCS_ENABLED` toggle. When disabled, the UI,
+assets, and raw schema routes are unavailable rather than merely hidden from
+navigation.
 
-The planned local route names are `/docs` and `/openapi.yaml`; Step 01 owns the
-final implementation and verification record.
+The local routes are `/docs`, `/docs/`, and `/openapi.yaml`. Their contract and
+verification record are owned by
+[`../contracts/HTTP_API.md`](../contracts/HTTP_API.md) and
+[`../PROJECT_STATE.md`](../PROJECT_STATE.md).
 
 ## 13. Implementation sequence
 
@@ -274,29 +277,75 @@ integration boundary. Do not create application behavior.
 
 ### Step 01 — Minimal bootable foundation
 
+Status: In Progress; Step 01A is verified and Step 01B is not approved
+
+#### Step 01A — Bootable, documented API process
+
+Status: Verified on 2026-07-30
+
+Approved: 2026-07-30
+
 Scope:
 
-- Go module and one API entry point;
-- typed configuration and fail-fast validation;
-- loopback-safe listener;
-- PostgreSQL connectivity;
-- health and readiness;
-- graceful shutdown;
-- canonical JSON errors;
-- authoritative OpenAPI;
-- Swagger and raw schema behind `API_DOCS_ENABLED`;
-- idempotent PowerShell setup and full verification entry point.
+- initialize the Go module and one `erp-api` entry point;
+- use standard-library `net/http` routing;
+- load typed `HTTP_HOST`, `HTTP_PORT`, and `API_DOCS_ENABLED`
+  configuration;
+- default to `127.0.0.1:8080` and reject wildcard bind hosts;
+- expose `GET /healthz`;
+- return one canonical JSON error envelope;
+- shut down gracefully on process termination;
+- create `api/openapi/v1/openapi.yaml` as the authoritative contract;
+- serve `/openapi.yaml` and embedded Swagger UI at `/docs` only when
+  `API_DOCS_ENABLED=true`;
+- use embedded Swagger assets with no runtime CDN or Node dependency;
+- add focused tests and `scripts/verify-all.ps1`;
+- update contracts and repository memory in the same slice.
+
+The `API_DOCS_ENABLED` default is `false`. The only accepted values are
+case-insensitive `true` and `false`. Local verification explicitly tests both
+states.
 
 Acceptance:
 
-- invalid configuration prevents serving;
-- liveness does not falsely depend on optional downstream systems;
+- configuration errors are exact and occur before listening;
+- `/healthz` is available with documentation both enabled and disabled;
+- `/docs` redirects to the canonical trailing-slash UI path when enabled;
+- raw OpenAPI and Swagger routes return canonical not-found errors when
+  disabled;
+- OpenAPI parses, validates, and covers every implemented public route;
+- Swagger renders the committed raw OpenAPI document;
+- HTTP server timeouts and graceful shutdown are explicit;
+- local smoke verification proves loopback-only accessibility and clean process
+  termination;
+- formatting, focused tests, `go test ./...`, build, full PowerShell
+  verification, residue scanning, and Git checks pass.
+
+Non-goals:
+
+- PostgreSQL or `pgx`;
+- `/readyz`;
+- migrations or development database setup;
+- tenants, users, authentication, RBAC, or HRMS providers;
+- background work, messaging, WebSockets, containers, or deployment.
+
+#### Step 01B — PostgreSQL connectivity and truthful readiness
+
+Status: Proposed; not approved
+
+Scope:
+
+- PostgreSQL connectivity;
+- forward-only migrations;
+- `/readyz` tied to the required database dependency;
+- idempotent local database setup.
+
+Acceptance:
+
+- invalid database configuration prevents serving;
 - readiness reflects required PostgreSQL availability;
-- shutdown closes listeners and resources cleanly;
-- documentation routes work when enabled and are unavailable when disabled;
-- route/schema drift checking passes;
-- ordinary endpoints continue in both documentation modes;
-- local verification uses loopback and no administrator privileges.
+- startup and shutdown manage database resources cleanly;
+- migrations and setup are repeatable without destructive resets.
 
 ### Step 02 — ERP identity and tenancy
 
